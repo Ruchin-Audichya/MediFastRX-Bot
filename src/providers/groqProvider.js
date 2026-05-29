@@ -14,7 +14,7 @@ const sanitizeGeneratedText = (text = "", { allowUrls = false } = {}) =>
     .trim();
 
 class GroqProvider extends BaseLLMProvider {
-  async generate({ prompt, fallback = "", context = [], memory = [], evidence = null } = {}) {
+  async generate({ prompt, fallback = "", context = [], memory = [], evidence = null, systemPromptOverride = null } = {}) {
     const startedAt = Date.now();
     const apiKey = this.options.apiKey || process.env.GROQ_API_KEY;
     const model = this.options.model || process.env.GROQ_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
@@ -52,14 +52,20 @@ class GroqProvider extends BaseLLMProvider {
           messages: [
             {
               role: "system",
-              content: [
-                "You are MediFast AI.",
-                "You synthesize only from the supplied evidence.",
-                "Never invent medicines, availability, side effects, contraindications, or dosage.",
-                "Do not output source URLs or confidence scores unless they are explicitly present in the supplied evidence.",
-                "Mention uncertainty clearly. Ask for clarification when confidence is low.",
-                "This is medicine discovery support, not diagnosis or prescription.",
-              ].join(" "),
+              content:
+                systemPromptOverride && typeof systemPromptOverride === "string"
+                  ? systemPromptOverride
+                  : [
+                      // Task 7.2 — concise, scoped, grounded system prompt.
+                      // Existing tests assert "Never invent medicines" and "Do not output source URLs" — preserved.
+                      "You are MediFast AI, a careful India-first medicine assistant.",
+                      "You synthesize ONLY from the supplied evidence. Stay scoped to the active medicine named in the user prompt.",
+                      "Never invent medicines, availability, side effects, contraindications, prices, pharmacy names, or dosage.",
+                      "Do not output source URLs or confidence scores unless they appear verbatim in the supplied evidence.",
+                      "When confidence is low or the evidence does not contain the answer, mention uncertainty briefly and ask a short clarification question instead of guessing.",
+                      "This is medicine discovery support, not diagnosis or prescription.",
+                      "Keep replies concise and friendly: 2 to 4 short sentences, plain text, no headers, no bullet lists unless the user explicitly asked for them.",
+                    ].join(" "),
             },
             {
               role: "user",

@@ -42,6 +42,29 @@ MediFast AI is built for fast, local, family-friendly medicine discovery:
 - **Admin readiness:** `/health`, `/analytics`, `/status`, `/runtime`, `/trace`, `/nearby-debug`, and `/admindebug`.
 - **Production diagnostics:** medicine, catalog, RAG, LLM, memory, pharmacy, and full health checks.
 
+## What's New (Medicine Context Integrity Release)
+
+This release rebuilds MediFast around a single canonical `MedicineContext` that flows through every layer — entity extraction → router → tool executor → RAG → evidence integrity guard → orchestrator → Groq → formatter → Telegram. The result is a bot that no longer mixes up medicines mid-conversation, refuses to say "not found" on real-but-unknown medicines, and feels instant on Telegram.
+
+Highlights:
+
+- **Canonical MedicineContext** — frozen, confidence-scored, threaded end-to-end. Active medicine identity is preserved across follow-ups; switching to a new medicine works correctly.
+- **Smart follow-ups** — phrases like "what does it do", "can I take it daily", "can my father use it", "side effects", "what is the generic", "interactions with alcohol" all resolve against the active medicine without the user repeating the name.
+- **RAG contamination prevention** — medicine-aware retrieval scopes results to the active medicine's `medicine / generic / alias` metadata; the reranker uses a soft `medicineMatch` weight; an `evidenceIntegrity` guard validates every chunk before it reaches synthesis.
+- **LLM augment for unknown medicines** — when the catalog doesn't recognize a medicine (e.g., a new brand), Groq fills in a brief, sanitized general-knowledge answer with a clear "compiled from general knowledge — confirm with pharmacist" footnote. Every augmented answer is logged to `UnmatchedMedicineEnrichment` so admins can promote good answers into the verified catalog.
+- **Safety floor (never crossed)** — the LLM (any path) cannot output dosage, frequency, prescription advice, or stock claims. A post-LLM sanitizer strips dose patterns (`take 500 mg twice daily`, `every 6 hours`, `for 5 days`, etc.) before the user sees the message.
+- **ChatGPT-feel responses** — instant `🔎 Looking up X…` placeholder, then Telegram `editMessageText` swaps in the real card. Median perceived latency feels sub-second; cold-path resolver pre-warms 5,000 most-confident records at boot.
+- **Zomato-style nearby card** — clean numbered list with name, distance, open/closed badge, phone, tap-to-call and tap-to-navigate buttons. OSM live hydration when local Mongo coverage is thin.
+- **Deterministic-card fallback** — when Groq is off / fails / times out, every wired layer (context, evidence, enrichment, nearby) still reaches the user. No silent drops.
+- **Per-user TTL+LRU response cache** — repeat lookups about the same medicine reuse retrieval results within a 90s window for snappy follow-ups.
+- **Latency budgets verified** — deterministic p95 < 1500 ms, LLM p95 < 3500 ms on mocked dependencies.
+
+### Engineering signals
+
+- ~270 tests across exploration, preservation, unit, integration, and property-based tiers.
+- Property-based tests (P1–P6) cover contamination prevention, context retention, context switching, preservation, graceful degradation, and idempotent context construction.
+- Phase 7 MediAtlas integration is feature-flagged off but architecturally ready (the canonical context carries a reserved `enrichment` slot for inventory / forecast / substitutes / pharmacies).
+
 ## Architecture Diagram
 
 ![MediFast architecture](assets/readme/architecture-diagram.png)

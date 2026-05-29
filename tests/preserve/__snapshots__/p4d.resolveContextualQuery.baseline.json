@@ -1,0 +1,58 @@
+[
+  {
+    "input": "bukhar ki tablet",
+    "output": {
+      "query": "bukhar ki tablet",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "acidity ke liye kya lu",
+    "output": {
+      "query": "acidity ke liye kya lu",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "papa BP tablet",
+    "output": {
+      "query": "papa BP tablet",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "mummy ke liye sugar dawai",
+    "output": {
+      "query": "mummy ke liye sugar dawai",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "Dolo near me",
+    "output": {
+      "query": "Dolo near me",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "zzzqx tablet",
+    "output": {
+      "query": "zzzqx tablet",
+      "usedContext": false,
+      "context": null
+    }
+  },
+  {
+    "input": "hi",
+    "output": {
+      "query": "hi",
+      "usedContext": false,
+      "context": null
+    }
+  }
+]

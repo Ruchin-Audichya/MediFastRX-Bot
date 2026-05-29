@@ -1,0 +1,198 @@
+[
+  {
+    "name": "side-effects-query-no-category",
+    "query": "side effects",
+    "options": {
+      "semanticWeight": 0.55,
+      "keywordWeight": 0.35,
+      "categoryWeight": 0.1
+    },
+    "order": [
+      {
+        "id": "preg-1",
+        "confidence": 0.7375,
+        "components": {
+          "semantic": 0.8,
+          "keyword": 0.85,
+          "category": 0
+        }
+      },
+      {
+        "id": "preg-2",
+        "confidence": 0.6925,
+        "components": {
+          "semantic": 0.75,
+          "keyword": 0.8,
+          "category": 0
+        }
+      },
+      {
+        "id": "gaba-1",
+        "confidence": 0.5775,
+        "components": {
+          "semantic": 0.7,
+          "keyword": 0.55,
+          "category": 0
+        }
+      },
+      {
+        "id": "alpr-1",
+        "confidence": 0.5325,
+        "components": {
+          "semantic": 0.65,
+          "keyword": 0.5,
+          "category": 0
+        }
+      },
+      {
+        "id": "dolo-1",
+        "confidence": 0.4875,
+        "components": {
+          "semantic": 0.6,
+          "keyword": 0.45,
+          "category": 0
+        }
+      },
+      {
+        "id": "neutral-1",
+        "confidence": 0.345,
+        "components": {
+          "semantic": 0.5,
+          "keyword": 0.2,
+          "category": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "fever-query-symptom-category-match",
+    "query": "bukhar ki tablet",
+    "options": {
+      "category": "guideline",
+      "semanticWeight": 0.55,
+      "keywordWeight": 0.35,
+      "categoryWeight": 0.1
+    },
+    "order": [
+      {
+        "id": "preg-1",
+        "confidence": 0.7375,
+        "components": {
+          "semantic": 0.8,
+          "keyword": 0.85,
+          "category": 0
+        }
+      },
+      {
+        "id": "preg-2",
+        "confidence": 0.6925,
+        "components": {
+          "semantic": 0.75,
+          "keyword": 0.8,
+          "category": 0
+        }
+      },
+      {
+        "id": "gaba-1",
+        "confidence": 0.5775,
+        "components": {
+          "semantic": 0.7,
+          "keyword": 0.55,
+          "category": 0
+        }
+      },
+      {
+        "id": "alpr-1",
+        "confidence": 0.5325,
+        "components": {
+          "semantic": 0.65,
+          "keyword": 0.5,
+          "category": 0
+        }
+      },
+      {
+        "id": "dolo-1",
+        "confidence": 0.4875,
+        "components": {
+          "semantic": 0.6,
+          "keyword": 0.45,
+          "category": 0
+        }
+      },
+      {
+        "id": "neutral-1",
+        "confidence": 0.445,
+        "components": {
+          "semantic": 0.5,
+          "keyword": 0.2,
+          "category": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "empty-query",
+    "query": "",
+    "options": {
+      "semanticWeight": 0.55,
+      "keywordWeight": 0.35,
+      "categoryWeight": 0.1
+    },
+    "order": [
+      {
+        "id": "preg-1",
+        "confidence": 0.7375,
+        "components": {
+          "semantic": 0.8,
+          "keyword": 0.85,
+          "category": 0
+        }
+      },
+      {
+        "id": "preg-2",
+        "confidence": 0.6925,
+        "components": {
+          "semantic": 0.75,
+          "keyword": 0.8,
+          "category": 0
+        }
+      },
+      {
+        "id": "gaba-1",
+        "confidence": 0.5775,
+        "components": {
+          "semantic": 0.7,
+          "keyword": 0.55,
+          "category": 0
+        }
+      },
+      {
+        "id": "alpr-1",
+        "confidence": 0.5325,
+        "components": {
+          "semantic": 0.65,
+          "keyword": 0.5,
+          "category": 0
+        }
+      },
+      {
+        "id": "dolo-1",
+        "confidence": 0.4875,
+        "components": {
+          "semantic": 0.6,
+          "keyword": 0.45,
+          "category": 0
+        }
+      },
+      {
+        "id": "neutral-1",
+        "confidence": 0.345,
+        "components": {
+          "semantic": 0.5,
+          "keyword": 0.2,
+          "category": 0
+        }
+      }
+    ]
+  }
+]

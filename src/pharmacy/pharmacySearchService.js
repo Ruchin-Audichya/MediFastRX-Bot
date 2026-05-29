@@ -66,7 +66,13 @@ const searchNearbyPharmacies = async ({ latitude, longitude, radiusKm = DEFAULT_
   }
 
   let osmHydrated = false;
-  if (!pharmacies.length && LIVE_OSM_LOOKUP()) {
+  // Hydrate from OSM when we have NO local results, or when the local-DB
+  // results are too few even after the expanded radius. This stops the user
+  // from seeing the same 1-2 stale seeded pharmacies in a city we don't have
+  // good coverage for.
+  const needsOsmHydration =
+    LIVE_OSM_LOOKUP() && pharmacies.length < minResults;
+  if (needsOsmHydration) {
     try {
       const importRadiusKm = Math.max(radiusKm, Number(process.env.OSM_LIVE_RADIUS_KM || radiusKm));
       const summary = await importPharmaciesNearLocation({

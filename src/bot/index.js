@@ -27,6 +27,7 @@ const { rateLimiter } = require("./middleware/rateLimiter");
 const { formatWelcome, formatHelp } = require("../utils/formatter");
 const { setLanguage } = require("../services/familyService");
 const { addConversationTurn } = require("../services/memoryService");
+const { resolveContextualQuery } = require("../services/conversationContextService");
 const { getSessionLocation, shareLocationKeyboard } = require("../pharmacy/pharmacyLocationService");
 const eventBus = require("../events/eventBus");
 const { registerAnalyticsListener } = require("../events/listeners/analyticsListener");
@@ -288,9 +289,13 @@ const createBot = () => {
 
     if (await handlePendingFamilyText(ctx)) return;
 
-    // Otherwise, treat the message as a medicine search
-    logger.debug(`Plain text search from ${ctx.from.id}: "${text}"`);
-    await handleSearch(ctx, text);
+    const contextual = await resolveContextualQuery(ctx.from.id, text);
+    logger.debug(`Plain text search from ${ctx.from.id}: "${contextual.query}"`);
+    await handleSearch(ctx, contextual.query, {
+      originalQuery: contextual.originalQuery,
+      usedContext: contextual.usedContext,
+      activeContext: contextual.context,
+    });
   });
 
   bot.on("message:location", handleLocation);

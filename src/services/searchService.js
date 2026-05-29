@@ -122,6 +122,12 @@ const mapKnowledgeResult = (knowledge, query) => {
     confidence: knowledge.confidence || medicine.confidence || 0.75,
     knowledgeOnly: true,
     alternatives: knowledge.alternatives || [],
+    brands: medicine.brands || [],
+    aliases: medicine.aliases || [],
+    symptoms: medicine.symptoms || [],
+    diseases: medicine.diseases || [],
+    sideEffects: medicine.sideEffects || [],
+    precautions: medicine.precautions || [],
     pharmacy: {
       id: "knowledge",
       name: "Medicine knowledge match",

@@ -310,17 +310,10 @@ const normalizeMedicineQuery = async (query, { records = null } = {}) => {
     const candidateRecords = await findTextMedicineCandidates(query);
     if (candidateRecords.length) {
       const candidateResult = await matchAgainstRecords(query, candidateRecords);
-      if (candidateResult?.type === "medicine" || process.env.ENABLE_FULL_MEDICINE_INDEX !== "true") {
-        return candidateResult;
-      }
-    } else if (process.env.ENABLE_FULL_MEDICINE_INDEX !== "true") {
-      return {
-        type: "unknown",
-        normalizedQuery: query,
-        confidence: 0,
-        reason: "no direct or text candidate match",
-        suggestions: [],
-      };
+      if (candidateResult?.type === "medicine") return candidateResult;
+      // Otherwise fall through to the in-memory Fuse fuzzy index below — typos
+      // like "Prrgabakin" / "dolp" produce zero text-search hits, so the
+      // global fuzzy index is the real safety net.
     }
   }
 
@@ -373,7 +366,7 @@ const normalizeMedicineQuery = async (query, { records = null } = {}) => {
   }
 
   const confidence = Math.max(0, Math.min(1, 1 - best.score));
-  if (confidence < 0.55) {
+  if (confidence < 0.45) {
     return {
       type: "unknown",
       normalizedQuery: query,

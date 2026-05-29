@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-29T10:00:00.000Z",
+  "query": "Dolo 650",
+  "city": "Jaipur",
+  "location": { "latitude": 26.9124, "longitude": 75.7873 },
+  "medicine": {
+    "query": "Dolo 650",
+    "resolved_name": "Dolo 650",
+    "generic": "Paracetamol",
+    "category": "Analgesic / Antipyretic",
+    "confidence": 0.97,
+    "match_reason": "exact_brand",
+    "aliases": ["Dolo650", "Dol650", "dolo 650"]
+  },
+  "summary": {
+    "available_nearby": true,
+    "best_pharmacy_id": "pharm_8a3f2c",
+    "best_pharmacy_name": "Apollo Pharmacy - C-Scheme",
+    "nearest_distance_km": 1.4,
+    "max_stock_nearby": 48,
+    "shortage_risk": 0.18,
+    "recommend_substitutes": false
+  },
+  "availability": {
+    "schema_version": 1,
+    "generated_at": "2026-05-29T10:00:00.000Z",
+    "query": "Dolo 650",
+    "city": "Jaipur",
+    "location": { "latitude": 26.9124, "longitude": 75.7873 },
+    "partial": false,
+    "medicine": {
+      "query": "Dolo 650",
+      "resolved_name": "Dolo 650",
+      "generic": "Paracetamol",
+      "category": "Analgesic / Antipyretic",
+      "confidence": 0.97,
+      "match_reason": "exact_brand",
+      "aliases": ["Dolo650", "Dol650", "dolo 650"]
+    },
+    "summary": {
+      "available_nearby": true,
+      "best_pharmacy_id": "pharm_8a3f2c",
+      "best_pharmacy_name": "Apollo Pharmacy - C-Scheme",
+      "nearest_distance_km": 1.4,
+      "max_stock_nearby": 48,
+      "shortage_risk": 0.18,
+      "recommend_substitutes": false
+    },
+    "inventory": {
+      "status": "ok",
+      "detail": null,
+      "total_in_radius": 7,
+      "items": [
+        {
+          "medicine_id": "med_paracetamol_650",
+          "medicine_name": "Dolo 650",
+          "canonical_medicine": "Dolo 650",
+          "generic": "Paracetamol",
+          "brand": "Dolo",
+          "category": "Analgesic / Antipyretic",
+          "manufacturer": "Micro Labs",
+          "stock": 48,
+          "stock_status": "in_stock",
+          "pharmacy_id": "pharm_8a3f2c",
+          "pharmacy": {
+            "id": "pharm_8a3f2c",
+            "name": "Apollo Pharmacy - C-Scheme",
+            "city": "Jaipur",
+            "latitude": 26.9156,
+            "longitude": 75.8021,
+            "rating": 4.6,
+            "delivery_available": true,
+            "pharmacy_type": "chain"
+          },
+          "distance_km": 1.4,
+          "price": 32.0,
+          "availability_confidence": 0.91,
+          "forecast_risk": 0.18,
+          "forecast": "stable",
+          "substitutes": ["Crocin 650", "Calpol 650"],
+          "inventory_trend": "steady",
+          "expiry": "2027-08-31",
+          "last_updated": "2026-05-29T09:42:11.000Z",
+          "batch_number": "DL2608A"
+        },
+        {
+          "medicine_id": "med_paracetamol_650",
+          "medicine_name": "Dolo 650",
+          "canonical_medicine": "Dolo 650",
+          "generic": "Paracetamol",
+          "brand": "Dolo",
+          "category": "Analgesic / Antipyretic",
+          "manufacturer": "Micro Labs",
+          "stock": 22,
+          "stock_status": "in_stock",
+          "pharmacy_id": "pharm_4e91d2",
+          "pharmacy": {
+            "id": "pharm_4e91d2",
+            "name": "MedPlus - Vaishali Nagar",
+            "city": "Jaipur",
+            "latitude": 26.9089,
+            "longitude": 75.7421,
+            "rating": 4.3,
+            "delivery_available": true,
+            "pharmacy_type": "chain"
+          },
+          "distance_km": 3.1,
+          "price": 30.5,
+          "availability_confidence": 0.83,
+          "forecast_risk": 0.21,
+          "forecast": "stable",
+          "substitutes": ["Crocin 650", "Calpol 650"],
+          "inventory_trend": "rising",
+          "expiry": "2027-06-30",
+          "last_updated": "2026-05-29T09:38:02.000Z",
+          "batch_number": "DL2606B"
+        }
+      ]
+    },
+    "substitutes": {
+      "status": "ok",
+      "detail": null,
+      "items": [
+        {
+          "medicine_name": "Crocin 650",
+          "active_ingredient": "Paracetamol",
+          "score": 0.94,
+          "availability_score": 0.92,
+          "price_score": 0.88,
+          "distance_score": 0.95,
+          "side_effect_similarity": 1.0,
+          "median_price": 33.0,
+          "nearby_stock": 36
+        },
+        {
+          "medicine_name": "Calpol 650",
+          "active_ingredient": "Paracetamol",
+          "score": 0.89,
+          "availability_score": 0.85,
+          "price_score": 0.86,
+          "distance_score": 0.90,
+          "side_effect_similarity": 1.0,
+          "median_price": 34.0,
+          "nearby_stock": 19
+        }
+      ]
+    },
+    "forecast": {
+      "status": "ok",
+      "detail": null,
+      "forecast": {
+        "medicine": "Dolo 650",
+        "city": "Jaipur",
+        "trend": "stable",
+        "mape": 0.083,
+        "rmse": 11.4,
+        "points": [
+          { "date": "2026-05-30", "expected_demand": 142.0, "lower_bound": 124.0, "upper_bound": 161.0, "shortage_risk": 0.15 },
+          { "date": "2026-05-31", "expected_demand": 148.0, "lower_bound": 129.0, "upper_bound": 167.0, "shortage_risk": 0.17 },
+          { "date": "2026-06-01", "expected_demand": 151.0, "lower_bound": 131.0, "upper_bound": 171.0, "shortage_risk": 0.18 },
+          { "date": "2026-06-02", "expected_demand": 149.0, "lower_bound": 130.0, "upper_bound": 168.0, "shortage_risk": 0.18 },
+          { "date": "2026-06-03", "expected_demand": 145.0, "lower_bound": 126.0, "upper_bound": 164.0, "shortage_risk": 0.19 },
+          { "date": "2026-06-04", "expected_demand": 144.0, "lower_bound": 125.0, "upper_bound": 163.0, "shortage_risk": 0.19 },
+          { "date": "2026-06-05", "expected_demand": 146.0, "lower_bound": 127.0, "upper_bound": 165.0, "shortage_risk": 0.20 }
+        ]
+      }
+    }
+  },
+  "drug": {
+    "schema_version": 1,
+    "generated_at": "2026-05-29T10:00:00.000Z",
+    "query": "Dolo 650",
+    "resolved_name": "Dolo 650",
+    "confidence": 0.97,
+    "active_ingredient": "Paracetamol",
+    "is_combination": false,
+    "components": ["Paracetamol"],
+    "category": "Analgesic / Antipyretic",
+    "brands": ["Dolo", "Crocin", "Calpol"],
+    "drug_classes": ["Analgesic", "Antipyretic"],
+    "uses": ["Mild to moderate pain", "Fever", "Headache", "Body ache"],
+    "side_effects": [
+      { "effect": "Nausea", "frequency": "uncommon" },
+      { "effect": "Skin rash", "frequency": "rare" },
+      { "effect": "Liver toxicity at high doses", "frequency": "rare" }
+    ],
+    "contraindications": ["Severe hepatic impairment", "Known hypersensitivity to paracetamol"],
+    "warnings": [
+      "Do not exceed 4 g per 24 hours in adults.",
+      "Avoid concurrent alcohol; risk of hepatotoxicity."
+    ],
+    "dosage_forms": ["tablet", "syrup", "suspension"],
+    "prescription_required": false,
+    "dosing_note": "Reference data only; dosing decisions are the consumer's responsibility.",
+    "interacts_with": ["Warfarin", "Isoniazid", "Carbamazepine"],
+    "monographs": [
+      {
+        "ingredient": "Paracetamol",
+        "drug_class": "Analgesic / Antipyretic",
+        "aliases": ["Acetaminophen", "APAP"],
+        "uses": ["Mild to moderate pain", "Fever"],
+        "mechanism": "Inhibits prostaglandin synthesis in the central nervous system.",
+        "side_effects": [
+          { "effect": "Nausea", "frequency": "uncommon" },
+          { "effect": "Skin rash", "frequency": "rare" },
+          { "effect": "Liver toxicity at high doses", "frequency": "rare" }
+        ],
+        "contraindications": ["Severe hepatic impairment"],
+        "warnings": ["Do not exceed 4 g per 24 hours in adults."],
+        "dosage_forms": ["tablet", "syrup", "suspension"],
+        "prescription_required": false,
+        "dosing_note": null,
+        "provenance": {
+          "source": "seed_reference",
+          "source_rank": 1,
+          "last_updated": "2026-05-01T00:00:00.000Z"
+        }
+      }
+    ],
+    "disclaimer": "Reference data only. Not medical advice. The consuming application is responsible for patient-specific reasoning and safety guidance."
+  },
+  "interactions": {
+    "schema_version": 1,
+    "generated_at": "2026-05-29T10:00:00.000Z",
+    "medicines": ["Dolo 650", "Pregabalin"],
+    "resolved": { "Dolo 650": "Paracetamol", "Pregabalin": "Pregabalin" },
+    "unresolved": [],
+    "highest_severity": null,
+    "interaction_count": 0,
+    "interactions": [],
+    "disclaimer": "Reference data only. Not medical advice. The consuming application is responsible for patient-specific reasoning and safety guidance."
+  },
+  "facts": [
+    "Identified medicine: Dolo 650 (generic: Paracetamol).",
+    "Available nearby at Apollo Pharmacy - C-Scheme (1.4 km away) with up to 48 units in stock.",
+    "Common uses: Mild to moderate pain, Fever, Headache, Body ache.",
+    "Notable side effects: Nausea (uncommon), Skin rash (rare), Liver toxicity at high doses (rare).",
+    "Contraindications include: Severe hepatic impairment, Known hypersensitivity to paracetamol.",
+    "Key warnings: Do not exceed 4 g per 24 hours in adults. Avoid concurrent alcohol; risk of hepatotoxicity.",
+    "This is reference and operational data only. Apply the application's own safety policy before responding to the user."
+  ],
+  "disclaimer": "Reference and operational data only. Not medical advice. The consuming application is responsible for patient-specific reasoning, safety language, and the final user-facing response.",
+  "meta": {
+    "partial": false,
+    "sections_included": ["availability", "drug", "interactions"],
+    "sections_degraded": [],
+    "request_id": "req_locked_sample",
+    "elapsed_ms": 412.7,
+    "schema_version": 1
+  }
+}

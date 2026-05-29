@@ -36,7 +36,7 @@ const extractFirstMatch = (query, values) => values.find((value) => query.includ
 const cleanupMedicinePhrase = (rawText = "") =>
   String(rawText)
     .replace(/\b(near me|nearby|pharmacy|medical store|5km|10km|location)\b/gi, " ")
-    .replace(/\b(what|are|is|the|tell|me|about|of|for|ki|ke|ka|kya|hai|hota|hote|medicine|tablet|dawa)\b/gi, " ")
+    .replace(/\b(what|are|is|the|tell|me|about|of|for|used|uses?|does|do|kaam|ki|ke|ka|kya|hai|hota|hote|medicine|tablet|dawa)\b/gi, " ")
     .replace(/\b(side effects?|side-effects?|adverse effects?|reaction|reactions|precautions?|warnings?|safety|safe|avoid|nuksan|savdhani)\b/gi, " ")
     .replace(/\b(papa|father|dad|mummy|mom|mother|maa|child|kid|baby|beta|beti|dada|dadi|nana|nani|self)\b/gi, " ")
     .replace(/\s+/g, " ")

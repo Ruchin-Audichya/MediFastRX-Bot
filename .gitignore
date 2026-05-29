@@ -5,6 +5,12 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.bak*
+.local/
+
+# Editor / IDE workspaces and personal notes
+.kiro/
+docs/project-report/
 
 # Logs and runtime output
 logs/

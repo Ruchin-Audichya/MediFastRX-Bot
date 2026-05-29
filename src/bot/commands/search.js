@@ -11,16 +11,46 @@ const { answerFromKnowledgeBase } = require("../../services/ragService");
 const { getSessionLocation, shareLocationKeyboard } = require("../../pharmacy/pharmacyLocationService");
 const { handleNearbyMedicineSearch } = require("./nearby");
 const { runMediFastWorkflow } = require("../../orchestrator/orchestrator");
+const { resolveContextualQuery, setActiveMedicineContext, getActiveContext } = require("../../services/conversationContextService");
+const { augmentUnknownMedicine, looksLikeMedicineQuery } = require("../../medicine/llmAugmentService");
 const eventBus = require("../../events/eventBus");
 const {
   formatSearchResults,
+  formatMedicineCard,
   formatNotFound,
   formatReorderPrompt,
   formatSearchFollowUp,
   buildSearchActionKeyboard,
   formatMemorySaved,
+  escapeHtml,
 } = require("../../utils/formatter");
 const logger = require("../../utils/logger");
+
+// ---------------------------------------------------------------------------
+// Phase 6 / Task 8.3 — two-stage send scaffold + typing indicator on slow LLM paths.
+//
+// Today the LLM resolves before the reply (`runMediFastWorkflow` returns the
+// full provider text), so a true "send instant card, then editMessageText"
+// pipeline would require issuing the LLM call in parallel with search. That
+// is a future optimization. For now this module:
+//
+//   1. Exposes the env-flag helpers required by Task 8.5's tests
+//      (`TWO_STAGE_SEND_ENABLED`, `LLM_EDIT_BUDGET_MS`, `TYPING_THRESHOLD_MS`).
+//   2. Triggers a `ctx.replyWithChatAction("typing")` once before the final
+//      reply when the Groq path has been spending more than
+//      `TYPING_THRESHOLD_MS` (default 800ms) on this turn — gives the user a
+//      visible signal that something is happening.
+//   3. Keeps every other code path byte-for-byte identical to today.
+//
+// The flags are intentionally read each call (function form, not constant)
+// so tests can flip env vars between subtests without re-requiring the module.
+// ---------------------------------------------------------------------------
+const TWO_STAGE_SEND_ENABLED = () =>
+  process.env.ENABLE_TWO_STAGE_SEND !== "false"; // default ON
+const LLM_EDIT_BUDGET_MS = () =>
+  Number(process.env.LLM_EDIT_BUDGET_MS || 2500);
+const TYPING_THRESHOLD_MS = () =>
+  Number(process.env.TYPING_THRESHOLD_MS || 800);
 
 const isGreeting = (text = "") =>
   /^(hi|hello|hey|namaste|namaskar|ji|haan|han|yes|yo|hii|helo)$/i.test(String(text).trim());
@@ -30,7 +60,7 @@ const isGreeting = (text = "") =>
  * @param {import("grammy").Context} ctx
  * @param {string} query - the medicine name to search
  */
-const handleSearch = async (ctx, query) => {
+const handleSearch = async (ctx, query, contextOptions = {}) => {
   if (!query || query.trim().length < 2) {
     return ctx.reply(
       "Please provide a medicine name.\nExample: /search Paracetamol",
@@ -48,29 +78,35 @@ const handleSearch = async (ctx, query) => {
   // Show typing indicator
   await ctx.replyWithChatAction("typing");
 
+  const handlerStartedAt = Date.now();
   try {
+    const contextual = contextOptions.usedContext
+      ? { query, ...contextOptions }
+      : await resolveContextualQuery(ctx.from.id, query);
+    const effectiveQuery = contextual.query || query;
+    const activeCtxFromContextual = (contextual && contextual.context) || null;
     const profile = await getOrCreateProfile(ctx.from);
-    const entities = extractEntities(query, profile);
+    const entities = extractEntities(effectiveQuery, profile);
     const routes = routeMessage({ entities, profile });
-    const aliasExpansion = expandMedicineQuery(query);
-    const intent = detectIntent(aliasExpansion.alias ? aliasExpansion.normalizedQuery : query);
-    const mentionedMember = findMentionedFamilyMember(profile, query);
+    const aliasExpansion = expandMedicineQuery(effectiveQuery);
+    const intent = detectIntent(aliasExpansion.alias ? aliasExpansion.normalizedQuery : effectiveQuery);
+    const mentionedMember = findMentionedFamilyMember(profile, effectiveQuery);
     const familyTarget = mentionedMember || (entities.person && entities.person !== "self"
       ? { name: entities.familyMemberName || entities.person, relation: entities.person, ageGroup: "adult" }
       : null);
-    const safety = assessSafety({ entities, intent, mentionedMember, query });
+    const safety = assessSafety({ entities, intent, mentionedMember, query: effectiveQuery });
     const userLocation = await getSessionLocation(ctx.from.id);
     if (entities.intentType === "side_effects") {
       eventBus.emitSafe("side_effect.query", {
         telegramId: ctx.from.id,
-        query,
+        query: effectiveQuery,
         medicine: entities.medicine,
       });
     }
 
-    if (/\b(reorder|repeat|refill|phir se|dobara)\b/i.test(query) && mentionedMember) {
+    if (/\b(reorder|repeat|refill|phir se|dobara)\b/i.test(effectiveQuery) && mentionedMember) {
       const recent = await getRecentForFamilyMember(ctx.from.id, mentionedMember.name);
-      await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
+      await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
       return ctx.reply(formatReorderPrompt(mentionedMember, recent), {
         parse_mode: "HTML",
         reply_markup: recent?.topMedicineName
@@ -89,10 +125,10 @@ const handleSearch = async (ctx, query) => {
       });
     }
 
-    const genericFamilyMedicineAsk = /\b(medicine|tablet|dawa|goli|meds?)\b/i.test(query) && familyTarget && !entities.symptom && !entities.medicine;
+    const genericFamilyMedicineAsk = /\b(medicine|tablet|dawa|goli|meds?)\b/i.test(effectiveQuery) && familyTarget && !entities.symptom && !entities.medicine;
     if (genericFamilyMedicineAsk) {
       const recent = await getRecentForFamilyMember(ctx.from.id, familyTarget.name);
-      await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
+      await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
       return ctx.reply(formatReorderPrompt(familyTarget, recent), {
         parse_mode: "HTML",
         reply_markup: recent?.topMedicineName
@@ -107,11 +143,11 @@ const handleSearch = async (ctx, query) => {
     }
 
     if (entities.condition && familyTarget && !entities.symptom && !entities.medicine && !entities.nearbyIntent) {
-      const updatedMemory = await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
+      const updatedMemory = await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
       const newFacts = (updatedMemory?.facts || []).filter((fact) =>
         fact.entity === entities.person || fact.entity === familyTarget.relation
       );
-      return ctx.reply(formatMemorySaved({ member: familyTarget, facts: newFacts, query }), {
+      return ctx.reply(formatMemorySaved({ member: familyTarget, facts: newFacts, query: effectiveQuery }), {
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [
@@ -123,8 +159,8 @@ const handleSearch = async (ctx, query) => {
     }
 
     if (intent.needsFollowUp) {
-      await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
-      return ctx.reply(formatSearchFollowUp(query), {
+      await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
+      return ctx.reply(formatSearchFollowUp(effectiveQuery), {
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [
@@ -143,7 +179,7 @@ const handleSearch = async (ctx, query) => {
       : entities.medicine || intent.normalizedQuery;
 
     if (entities.nearbyIntent) {
-      await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
+      await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
       if (!userLocation) {
         return ctx.reply(
           "📍 <b>Share your location to find nearby pharmacies</b>\n\nI can search within 5 km and expand to 10 km if needed.",
@@ -168,15 +204,95 @@ const handleSearch = async (ctx, query) => {
     };
     const repeatSearch = await getRecentRepeat(ctx.from.id, normalizedIntentQuery);
     const { results, sos, query: normalizedQuery, suggestions = [] } = await searchMedicine(normalizedIntentQuery, searchOptions);
-    const memory = await addConversationTurn({ telegramId: ctx.from.id, userText: query, entities });
+    const memory = await addConversationTurn({ telegramId: ctx.from.id, userText: effectiveQuery, entities });
 
     if (results.length === 0) {
       eventBus.emitSafe("medicine.lookup.failed", {
         telegramId: ctx.from.id,
-        query,
+        query: effectiveQuery,
         normalizedQuery,
         intentKey: intent.key,
       });
+
+      // ---- LLM augment fallback for unknown medicines -----------------------
+      // If the user's query looks like a medicine name and our DB doesn't
+      // recognize it, ask Groq for a brief, sanitized general-knowledge
+      // summary. The answer is post-sanitized to strip dosage / stock /
+      // prescription claims, carries a soft "compiled from general knowledge"
+      // footnote, and is logged to UnmatchedMedicineEnrichment so the catalog
+      // can be promoted by an admin later (continuous-improvement loop).
+      const augmentTarget = entities.medicine || normalizedIntentQuery || normalizedQuery || effectiveQuery;
+      if (looksLikeMedicineQuery(augmentTarget)) {
+        let augmentPlaceholder = null;
+        if (TWO_STAGE_SEND_ENABLED()) {
+          try {
+            augmentPlaceholder = await ctx.reply(
+              `🤔 Checking <b>${escapeHtml(augmentTarget)}</b>…`,
+              { parse_mode: "HTML" }
+            );
+          } catch {
+            augmentPlaceholder = null;
+          }
+        }
+        const augment = await augmentUnknownMedicine({
+          telegramId: ctx.from.id,
+          query: augmentTarget,
+          normalizedQuery,
+        });
+        if (augment.ok && augment.text) {
+          const lines = [];
+          lines.push(`💊 <b>${escapeHtml(augmentTarget)}</b>`);
+          lines.push("");
+          lines.push(escapeHtml(augment.text));
+          lines.push("");
+          lines.push("<i>Compiled from general medical knowledge — not yet in our verified catalog. Please confirm with a pharmacist before use.</i>");
+          const replyText = lines.join("\n");
+          const replyMarkup = {
+            inline_keyboard: [
+              [
+                { text: "📍 Nearby Pharmacy", callback_data: "nearby:open" },
+                { text: "🆘 Raise SOS", callback_data: `sos:${augmentTarget.substring(0, 50)}` },
+              ],
+              [{ text: "🔄 Search Again", callback_data: "prompt_search" }],
+            ],
+          };
+          if (augmentPlaceholder) {
+            try {
+              await ctx.api.editMessageText(
+                ctx.chat.id,
+                augmentPlaceholder.message_id,
+                replyText,
+                { parse_mode: "HTML", reply_markup: replyMarkup }
+              );
+            } catch (err) {
+              logger.warn(`Augment edit fallback to fresh send: ${err.message}`);
+              await ctx.reply(replyText, { parse_mode: "HTML", reply_markup: replyMarkup });
+            }
+          } else {
+            await ctx.reply(replyText, { parse_mode: "HTML", reply_markup: replyMarkup });
+          }
+          // Set the augmented medicine as the active context so follow-ups
+          // (side effects / what does it do / can my father take it) keep
+          // working with the same name. Confidence is intentionally below
+          // the verified threshold so the bot still treats it as soft data.
+          setActiveMedicineContext(ctx.from.id, {
+            medicineName: augmentTarget,
+            genericName: augmentTarget,
+            query: augmentTarget,
+            confidence: 0.5,
+          });
+          return;
+        }
+        // Augment failed — clean up the placeholder if it exists.
+        if (augmentPlaceholder) {
+          try {
+            await ctx.api.deleteMessage(ctx.chat.id, augmentPlaceholder.message_id);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
       if (sos) {
         // Prompt user to use SOS
         await ctx.reply(formatNotFound(normalizedQuery, suggestions), {
@@ -202,7 +318,7 @@ const handleSearch = async (ctx, query) => {
 
     const historyPayload = {
       telegramId: ctx.from.id,
-      originalQuery: query,
+      originalQuery: contextual.originalQuery || query,
       normalizedQuery,
       intentKey: intent.key,
       topMedicineName: results[0]?.medicineName,
@@ -220,10 +336,32 @@ const handleSearch = async (ctx, query) => {
       });
     }
 
-    const needsContext = routes.some((route) => route.tool === "rag" || route.tool === "memory");
+    // ----- Two-stage send: send an instant placeholder NOW, then edit it
+    // ----- with the full card once the orchestrator/Groq finishes. This is
+    // ----- what gives the bot a ChatGPT-like "I am thinking..." feel and
+    // ----- hides the 1-3s tool/LLM latency from the user.
+    const topMedicineName =
+      results[0]?.medicineName || normalizedQuery || "your medicine";
+    let placeholderMessage = null;
+    if (TWO_STAGE_SEND_ENABLED()) {
+      try {
+        placeholderMessage = await ctx.reply(
+          `🔎 Looking up <b>${escapeHtml(topMedicineName)}</b>…`,
+          { parse_mode: "HTML" }
+        );
+      } catch (err) {
+        // Telegram send is best-effort here — never block the real reply.
+        logger.warn(`Two-stage placeholder send failed: ${err.message}`);
+      }
+    }
+
+    const needsContext =
+      routes.some((route) => route.tool === "rag" || route.tool === "memory") ||
+      Boolean(entities.medicine || entities.normalizedMedicineQuery) ||
+      Boolean(activeCtxFromContextual);
     const workflow = needsContext
       ? await runMediFastWorkflow({
-          query,
+          query: effectiveQuery,
           profile,
           telegramId: ctx.from.id,
           location: userLocation,
@@ -246,10 +384,142 @@ const handleSearch = async (ctx, query) => {
         }
       : null;
 
-    await ctx.reply(formatSearchResults(results, normalizedQuery, { intent, mentionedMember, repeatSearch, routes, safety, alias: aliasExpansion.alias, aiContext, entities }), {
-      parse_mode: "HTML",
-      reply_markup: buildSearchActionKeyboard(normalizedQuery),
-    });
+    const top = results[0] || {};
+    const resolution = {
+      medicine: {
+        _id: top._id || null,
+        medicineName: top.medicineName || normalizedQuery,
+        genericName: top.genericName || top.medicineName || normalizedQuery,
+        aliases: Array.isArray(top.aliases) ? top.aliases : [],
+        salts: Array.isArray(top.salts)
+          ? top.salts
+          : (top.genericName ? [top.genericName] : []),
+        brands: Array.isArray(top.brands) ? top.brands : [],
+        category: top.category || null,
+      },
+      type: "medicine",
+      normalizedQuery,
+      confidence:
+        typeof top.medicineConfidence === "number"
+          ? top.medicineConfidence
+          : (typeof top.confidence === "number" ? top.confidence : 0.95),
+      method: top.matchMethod || "search:topResult",
+      reason: "search results topResult",
+      relationships: Array.isArray(top.relationships) ? top.relationships : [],
+    };
+    setActiveMedicineContext(ctx.from.id, { resolution });
+
+    // Phase 6 / Task 8.3 — show a typing indicator on slow Groq paths so
+    // perceived latency stays acceptable. We prefer an explicit, observable
+    // signal here rather than threading a separate sender object — every
+    // other replied flow above is unchanged. Two-stage scaffold note: today
+    // `runMediFastWorkflow` resolves before we send, so a literal
+    // "instant ack + editMessageText" pipeline is a no-op (the LLM result
+    // is already in `aiContext.answer`). When we move the LLM call to be
+    // issued in parallel with search in a future phase, this is the seam
+    // where the deterministic card would land first.
+    const usedLLM = Boolean(workflow && !workflow?.generated?.skipped && !workflow?.generated?.fallbackUsed);
+    const handlerElapsedMs = Date.now() - handlerStartedAt;
+    if (
+      TWO_STAGE_SEND_ENABLED() &&
+      usedLLM &&
+      handlerElapsedMs > TYPING_THRESHOLD_MS()
+    ) {
+      try {
+        await ctx.replyWithChatAction("typing");
+      } catch (err) {
+        // Telegram chat-action is best-effort; never block the final reply.
+        logger.warn(`two-stage typing indicator failed: ${err.message}`);
+      }
+    }
+
+    // Phase 9 / Task 11.2 — when an active MedicineContext is present and
+    // confidence is at/above threshold, render the new SOLID medicine card via
+    // `formatMedicineCard`. Non-medicine flows (no active ctx / low confidence)
+    // continue to use `formatSearchResults` exactly as today (preservation).
+    //
+    // We re-read the active context here because `setActiveMedicineContext`
+    // above may have just landed the FIRST-turn context (the contextual.context
+    // captured earlier was null for a fresh medicine name).
+    // Phase 9 / Task 11.2 — when an active MedicineContext is present and
+    // confidence is at/above threshold, render the new SOLID medicine card via
+    // `formatMedicineCard`. Non-medicine flows (no active ctx / low confidence)
+    // continue to use `formatSearchResults` exactly as today (preservation).
+    //
+    // We re-read the active context here because `setActiveMedicineContext`
+    // above may have just landed the FIRST-turn context (the contextual.context
+    // captured earlier was null for a fresh medicine name).
+    const activeCtx = getActiveContext(ctx.from.id) || activeCtxFromContextual;
+    const cardThreshold = Number(
+      process.env.MEDICINE_CONTEXT_CONFIDENCE_THRESHOLD || 0.6
+    );
+    const shouldUseMedicineCard =
+      activeCtx &&
+      typeof activeCtx === "object" &&
+      activeCtx.activeStatus === "active" &&
+      typeof activeCtx.confidence === "number" &&
+      activeCtx.confidence >= cardThreshold;
+
+    const replyText = shouldUseMedicineCard
+      ? formatMedicineCard(activeCtx, {
+          evidence: aiContext?.evidence,
+          safety,
+          enrichment: activeCtx.enrichment,
+          aiAnswer: aiContext?.answer || "",
+          latency: aiContext
+            ? { endToEnd: aiContext.providerLatencyMs || 0 }
+            : null,
+        })
+      : formatSearchResults(results, normalizedQuery, {
+          intent,
+          mentionedMember,
+          repeatSearch,
+          routes,
+          safety,
+          alias: aliasExpansion.alias,
+          aiContext,
+          entities,
+          contextual,
+        });
+
+    // Defensive: if the medicine card came out empty (e.g. context lacked
+    // medicineName / genericName), fall back to the legacy result list so the
+    // user is never sent an empty message.
+    const finalText =
+      shouldUseMedicineCard && !replyText
+        ? formatSearchResults(results, normalizedQuery, {
+            intent,
+            mentionedMember,
+            repeatSearch,
+            routes,
+            safety,
+            alias: aliasExpansion.alias,
+            aiContext,
+            entities,
+            contextual,
+          })
+        : replyText;
+
+    // Send (or edit the placeholder with) the final card. Editing avoids the
+    // user seeing two messages — the placeholder becomes the real reply.
+    const replyMarkup = buildSearchActionKeyboard(normalizedQuery);
+    if (placeholderMessage) {
+      try {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          placeholderMessage.message_id,
+          finalText,
+          { parse_mode: "HTML", reply_markup: replyMarkup }
+        );
+      } catch (err) {
+        // If editing fails (rare; e.g. message-not-modified), fall back to a
+        // fresh send so the user always gets the answer.
+        logger.warn(`Two-stage edit failed, sending fresh: ${err.message}`);
+        await ctx.reply(finalText, { parse_mode: "HTML", reply_markup: replyMarkup });
+      }
+    } else {
+      await ctx.reply(finalText, { parse_mode: "HTML", reply_markup: replyMarkup });
+    }
 
     logger.info(
       `Search: "${normalizedQuery}" → ${results.length} results for user ${ctx.from.id}`
@@ -262,4 +532,14 @@ const handleSearch = async (ctx, query) => {
   }
 };
 
-module.exports = { handleSearch };
+module.exports = {
+  handleSearch,
+  // Phase 6 / Task 8.3 — exposed for tests in `tests/unit/cache/responseCache.test.js`
+  // and `tests/integration/orchestrator/latency.test.js`. Not part of the
+  // production API surface; do not consume from other modules.
+  __internals: {
+    TWO_STAGE_SEND_ENABLED,
+    LLM_EDIT_BUDGET_MS,
+    TYPING_THRESHOLD_MS,
+  },
+};

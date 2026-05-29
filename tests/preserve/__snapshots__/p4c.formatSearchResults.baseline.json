@@ -1,0 +1,22 @@
+[
+  {
+    "name": "symptom-education-bukhar",
+    "query": "bukhar ki tablet",
+    "html": "\n💊 <b>Paracetamol</b>\n\n<b>Used for:</b>\n• fever\n• body ache\n\n<b>Salt:</b>\nParacetamol\n\n<b>Brands:</b>\nBrand A, Brand B\n\n<b>Availability:</b>\nAvailable in listed inventory · ₹25/strip\n<blockquote expandable>🏪 <b>Test Pharmacy</b> — Test Area\n📍 1, Test Street, Jaipur\n📞 0141-0000000\n🕐 9am - 9pm\n🔄 Verified: 148d ago\n</blockquote>\n\n💡 <i>Stock info may change. Call ahead to confirm.</i>\n⚠️ <i>This bot helps discover medicines and is not a replacement for a doctor.</i>"
+  },
+  {
+    "name": "family-only-papa-bp",
+    "query": "papa BP tablet",
+    "html": "For: <b>Papa</b> (senior)\n\n💊 <b>Telmisartan</b> 📋 <i>Rx required</i>\n\n<b>Used for:</b>\n• high blood pressure\n\n<b>Salt:</b>\nTelmisartan\n\n<b>Brands:</b>\nBrand A, Brand B\n\n<b>Availability:</b>\nAvailable in listed inventory · ₹25/strip\n<blockquote expandable>🏪 <b>Test Pharmacy</b> — Test Area\n📍 1, Test Street, Jaipur\n📞 0141-0000000\n🕐 9am - 9pm\n🔄 Verified: 148d ago\n</blockquote>\n\n💡 <i>Stock info may change. Call ahead to confirm.</i>\n⚠️ <i>This bot helps discover medicines and is not a replacement for a doctor.</i>"
+  },
+  {
+    "name": "nearby-only-dolo",
+    "query": "Dolo near me",
+    "html": "\n💊 <b>Dolo650</b>\n\n<b>Used for:</b>\n• fever\n\n<b>Salt:</b>\nParacetamol\n\n<b>Brands:</b>\nBrand A, Brand B\n\n<b>Availability:</b>\nAvailable in listed inventory · ₹25/strip\n<blockquote expandable>🏪 <b>Test Pharmacy</b> — Test Area\n📍 1, Test Street, Jaipur\n📞 0141-0000000\n🕐 9am - 9pm\n🔄 Verified: 148d ago\n</blockquote>\n\n💡 <i>Stock info may change. Call ahead to confirm.</i>\n⚠️ <i>This bot helps discover medicines and is not a replacement for a doctor.</i>"
+  },
+  {
+    "name": "low-confidence-ambiguous",
+    "query": "zzzqx tablet",
+    "html": "I may need one more detail to answer this confidently.\n\n💊 <b>Unknown Match</b>\n\n<b>Used for:</b>\n• medicine availability\n\n<b>Brands:</b>\nBrand A, Brand B\n\n<b>Availability:</b>\nKnown medicine. Live stock is not confirmed yet.\n<blockquote expandable>🏪 <b>Test Pharmacy</b> — Test Area\n📍 1, Test Street, Jaipur\n📞 0141-0000000\n</blockquote>\n\n💡 <i>Stock info may change. Call ahead to confirm.</i>\n⚠️ <i>This bot helps discover medicines and is not a replacement for a doctor.</i>"
+  }
+]

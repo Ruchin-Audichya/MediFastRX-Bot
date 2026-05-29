@@ -7,6 +7,7 @@ const { answerFromKnowledgeBase, retrieveKnowledge } = require("../services/ragS
 const { retrieveRelevantMemory } = require("../services/memoryService");
 const { searchMedicineKnowledge } = require("../medicine/medicineKnowledgeService");
 const { recommendNearbyPharmacies } = require("../pharmacy/pharmacyRecommendationService");
+const { getMediAtlasContext } = require("../integrations/mediatlas");
 
 const tools = {
   searchMedicine: {
@@ -59,9 +60,12 @@ const tools = {
   },
   retrieveKnowledge: {
     name: "retrieveKnowledge",
-    input: { question: "string" },
+    input: { question: "string", medicineScope: "object?" },
     output: { context: "array", confidence: "number" },
-    execute: ({ question, metadata }) => retrieveKnowledge({ question, metadata }),
+    // Forward medicineScope so the orchestrator can scope RAG to the active
+    // MedicineContext (Phase 5 of medicine-context-integrity bugfix).
+    execute: ({ question, metadata, medicineScope }) =>
+      retrieveKnowledge({ question, metadata, medicineScope }),
   },
   retrieveRelevantMemory: {
     name: "retrieveRelevantMemory",
@@ -74,6 +78,33 @@ const tools = {
     input: { query: "string" },
     output: { medicine: "object", alternatives: "array", confidence: "number" },
     execute: ({ query }) => searchMedicineKnowledge({ query }),
+  },
+  getMediAtlasContext: {
+    name: "getMediAtlasContext",
+    input: {
+      q: "string",
+      latitude: "number?",
+      longitude: "number?",
+      radiusKm: "number?",
+      city: "string?",
+      alsoTaking: "string[]?",
+      includeAvailability: "boolean?",
+      includeDrug: "boolean?",
+      includeInteractions: "boolean?",
+      limit: "number?",
+    },
+    output: {
+      ok: "boolean",
+      disabled: "boolean?",
+      value: "object?",
+      error: "object?",
+      requestId: "string?",
+    },
+    // Feature-flagged in the implementation: returns
+    // { ok:false, disabled:true } when ENABLE_MEDIATLAS != "true".
+    // Wired here so toolExecutor / orchestrator can plan around it as soon
+    // as MediAtlas Sprint 1 ships and the flag flips.
+    execute: (input) => getMediAtlasContext(input),
   },
 };
 

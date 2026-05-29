@@ -55,10 +55,14 @@ const hybridRetrieve = async (query, options = {}) => {
     collectionName,
     metadata = {},
     category,
+    medicineScope = null,
   } = options;
 
   const [vectorResults, keywordResults] = await Promise.all([
-    retrieve(query, { collectionName, k, metadata }),
+    // Phase 5.4: medicine identity flows into the vector retrieve so Chroma's
+    // $or filter or the local post-filter can scope results to the active
+    // medicine. Keyword retrieval is text-only and does not need the scope.
+    retrieve(query, { collectionName, k, metadata, medicineScope }),
     keywordRetrieve(query, { k }),
   ]);
 
@@ -69,7 +73,10 @@ const hybridRetrieve = async (query, options = {}) => {
     sourceType: "vector",
   }));
   const merged = mergeResults(normalizedVector, keywordResults);
-  const ranked = rerank(query, merged, { category }).slice(0, k);
+  // Pass medicineScope through to rerank so the medicineMatch weight (5.5)
+  // can soft-scope ordering. The merged list is intentionally NOT pre-filtered
+  // — over-fetch + reranker handle scoping while preserving recall.
+  const ranked = rerank(query, merged, { category, medicineScope }).slice(0, k);
 
   eventBus.emitSafe("retrieval.completed", {
     type: "hybrid",

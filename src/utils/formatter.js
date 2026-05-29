@@ -29,7 +29,7 @@ const formatVerifiedTime = (date) => {
 
 const MEDICAL_DISCLAIMER =
   "This bot helps discover medicines and is not a replacement for a doctor.";
-const AI_DEBUG = () => process.env.AI_DEBUG === "true" || process.env.NODE_ENV === "development";
+const AI_DEBUG = (context = {}) => context.debug === true;
 
 const formatAvailabilityConfidence = (score) => {
   if (score <= 0.18) return "High";
@@ -58,6 +58,23 @@ const formatUseCase = (item, intent) => {
   return categoryMap[item.category] || "medicine availability";
 };
 
+const uniqueList = (items = []) => [...new Set(items.filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
+
+const getUseBullets = (item, intent) => {
+  const direct = uniqueList([...(item.symptoms || []), ...(item.diseases || [])]).slice(0, 3);
+  if (direct.length) return direct;
+  return [formatUseCase(item, intent)];
+};
+
+const getBrandText = (item) => {
+  const brands = uniqueList([...(item.brands || []), item.brand, ...(item.aliases || [])])
+    .filter((name) => normalizeDisplay(name) !== normalizeDisplay(item.medicineName))
+    .slice(0, 4);
+  return brands.length ? brands.join(", ") : "No brand alternatives listed yet";
+};
+
+const normalizeDisplay = (value = "") => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+
 /**
  * Format a list of inventory search results into a Telegram HTML message.
  */
@@ -67,63 +84,63 @@ const formatSearchResults = (results, query, context = {}) => {
   const { intent, mentionedMember, repeatSearch } = context;
   const routes = context.routes || [];
 
-  let message = `💊 <b>${escapeHtml(query)}</b>\n`;
-  if (intent?.label) {
-    message += `Understood: <i>${escapeHtml(intent.label)}</i>`;
-    if (intent.confidence) message += ` · confidence ${escapeHtml(intent.confidence)}`;
-    message += `\n`;
-  }
+  let message = context.contextual?.usedContext
+    ? `💬 <i>Continuing from ${escapeHtml(context.contextual.context?.medicineName || query)}</i>\n\n`
+    : "";
   if (context.alias) {
     const brands = context.alias.brands?.slice(0, 3).join(", ");
-    message += `Matched alias: <i>${escapeHtml(context.alias.salt)}${brands ? ` (${brands})` : ""}</i>\n`;
+    message += `Matched: <i>${escapeHtml(context.alias.salt)}${brands ? ` (${brands})` : ""}</i>\n`;
   }
   if (mentionedMember) {
     message += `For: <b>${escapeHtml(mentionedMember.name)}</b> (${escapeHtml(mentionedMember.ageGroup)})\n`;
   }
-  const knowledgeOnlyCount = results.filter((item) => item.knowledgeOnly).length;
-  const liveCount = results.length - knowledgeOnlyCount;
-  message += knowledgeOnlyCount && !liveCount
-    ? `Result: <b>${results.length}</b> knowledge match${results.length !== 1 ? "es" : ""}\n`
-    : `Result: <b>${results.length}</b> live match${results.length !== 1 ? "es" : ""}\n`;
   if (repeatSearch?.topMedicineName) {
     message += `\n🔁 Need to reorder previous medicine: <b>${escapeHtml(repeatSearch.topMedicineName)}</b>?\n`;
   }
-  if (routes.length) {
-    message += `AI route: ${routes.slice(0, 3).map((route) => `${route.tool} ${Math.round(route.confidence * 100)}%`).join(" · ")}\n`;
-  }
   if (context.aiContext?.answer) {
-    message += `Context: <i>${escapeHtml(context.aiContext.answer).slice(0, 350)}</i>\n`;
+    message += `<i>${escapeHtml(context.aiContext.answer).slice(0, 350)}</i>\n`;
   }
   if (context.aiContext?.lowConfidence) {
-    message += `Clarification: <i>I could not confidently retrieve trusted knowledge for this part yet.</i>\n`;
+    message += `I may need one more detail to answer this confidently.\n`;
   }
   message += `\n`;
 
   displayed.forEach((item, index) => {
-    const stockEmoji = item.knowledgeOnly ? "📘" : item.inStock ? "✅" : "❌";
     const rareTag = item.isRare ? " 🔴 <b>[RARE]</b>" : "";
     const rxTag = item.requiresPrescription ? " 📋 <i>Rx required</i>" : "";
-
-    const matchConfidence = item.knowledgeOnly ? formatConfidencePercent(item.confidence || item.matchConfidence || 0.74) : formatAvailabilityConfidence(item.matchScore);
-    message += `${index + 1}. ${stockEmoji} <b>${escapeHtml(item.medicineName)}</b>${rareTag}\n`;
-    message += `   Use: ${escapeHtml(formatUseCase(item, intent))}\n`;
+    const useBullets = getUseBullets(item, intent);
+    message += `${index > 0 ? "\n" : ""}💊 <b>${escapeHtml(item.medicineName)}</b>${rareTag}${rxTag}\n\n`;
+    message += `<b>Used for:</b>\n`;
+    useBullets.forEach((use) => {
+      message += `• ${escapeHtml(use)}\n`;
+    });
 
     if (item.genericName) {
-      message += `   Salt: <i>${escapeHtml(item.genericName)}</i>\n`;
+      message += `\n<b>Salt:</b>\n${escapeHtml(item.genericName)}\n`;
     }
 
-    if (item.brand) {
-      message += `   Brand/alternative: ${escapeHtml(item.brand)}\n`;
-    }
+    message += `\n<b>Brands:</b>\n${escapeHtml(getBrandText(item))}\n`;
 
     if (item.knowledgeOnly) {
-      message += `   Availability: <i>Known medicine, live stock not confirmed yet</i>${rxTag}\n`;
-      message += `   Confidence: ${escapeHtml(matchConfidence)} knowledge\n`;
+      message += `\n<b>Availability:</b>\nKnown medicine. Live stock is not confirmed yet.\n`;
     } else {
-      message += `   💊 ${formatPrice(item.price, item.unit)}${rxTag}\n`;
-      message += `   Confidence: ${escapeHtml(matchConfidence)}\n`;
+      message += `\n<b>Availability:</b>\n${item.inStock ? "Available in listed inventory" : "Listed, stock may be unavailable"} · ${formatPrice(item.price, item.unit)}\n`;
+    }
+
+    const details = [];
+    if (item.alternatives?.length) {
+      details.push(`Alternatives: ${item.alternatives.slice(0, 4).map((alt) => alt.medicineName || alt.genericName || alt).filter(Boolean).join(", ")}`);
+    }
+    if (item.sideEffects?.length) {
+      details.push(`Side effects noted: ${item.sideEffects.slice(0, 3).map((side) => side.effect || side).join("; ")}`);
+    }
+    if (item.precautions?.length) {
+      details.push(`Precautions: ${item.precautions.slice(0, 3).join("; ")}`);
     }
     message += `<blockquote expandable>`;
+    if (details.length) {
+      message += `${escapeHtml(details.join("\n"))}\n\n`;
+    }
     message += `🏪 <b>${escapeHtml(item.pharmacy.name)}</b> — ${escapeHtml(item.pharmacy.area)}\n`;
     message += `📍 ${escapeHtml(item.pharmacy.address)}\n`;
 
@@ -156,7 +173,7 @@ const formatSearchResults = (results, query, context = {}) => {
     }
   }
 
-  if (AI_DEBUG()) {
+  if (AI_DEBUG(context)) {
     const entities = context.entities || {};
     const docs = context.aiContext?.context || [];
     const memory = context.aiContext?.memory || [];
@@ -189,6 +206,203 @@ const formatSearchResults = (results, query, context = {}) => {
   message += `⚠️ <i>${MEDICAL_DISCLAIMER}</i>`;
 
   return message;
+};
+
+// ---------------------------------------------------------------------------
+// Phase 9 / Task 11.1 — formatMedicineCard
+//
+// SOLID-reply Telegram card. Sections render only when their data is present
+// (Medicine, Generic, Primary Use, Common Side Effects, Key Safety Notes,
+// Alternatives, Nearby Availability, Forecast, Confidence). The card
+// explicitly consumes `medicineContext + evidence + enrichment + nearby` so
+// every wired layer (context, evidence, enrichment, safety) reaches the user.
+//
+// Design contract:
+//   - HTML parse mode (Telegram).
+//   - Existing helpers reused: escapeHtml, formatConfidencePercent,
+//     MEDICAL_DISCLAIMER. No new dependencies.
+//   - Detail (aliases / salts / category / latency) is folded into a
+//     <blockquote expandable> so the card stays mobile-first.
+//   - Empty / null `medicineContext` returns an empty string. Caller
+//     (search.js) decides between this card and `formatSearchResults`.
+// ---------------------------------------------------------------------------
+const pickName = (item) => {
+  if (!item) return null;
+  if (typeof item === "string") return item;
+  if (typeof item !== "object") return null;
+  return (
+    item.name ||
+    item.medicineName ||
+    item.genericName ||
+    item.pharmacyName ||
+    null
+  );
+};
+
+const formatDistanceKm = (value) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `${value.toFixed(1)}km`;
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return null;
+};
+
+const formatMedicineCard = (medicineContext, opts = {}) => {
+  if (!medicineContext || typeof medicineContext !== "object") return "";
+
+  const ctx = medicineContext;
+  const { evidence = null, safety = null, enrichment = null, latency = null, aiAnswer = null } = opts;
+
+  // Resolve enrichment from either the explicit option or from the context's
+  // reserved slot (whichever is non-null) — Task 9.4 stamps both the
+  // evidence.enrichment and MedicineContext.enrichment via withEnrichment.
+  const enr =
+    (enrichment && typeof enrichment === "object" && enrichment) ||
+    (ctx.enrichment && typeof ctx.enrichment === "object" && ctx.enrichment) ||
+    {};
+
+  const evMed =
+    (evidence &&
+      evidence.medicineContext &&
+      evidence.medicineContext.medicine) ||
+    {};
+
+  const lines = [];
+
+  // ---- Header: Medicine Name (Generic Name) ---------------------------------
+  if (ctx.medicineName) {
+    const showGeneric = ctx.genericName && ctx.genericName !== ctx.medicineName;
+    lines.push(
+      showGeneric
+        ? `💊 <b>${escapeHtml(ctx.medicineName)}</b> <i>(${escapeHtml(ctx.genericName)})</i>`
+        : `💊 <b>${escapeHtml(ctx.medicineName)}</b>`
+    );
+  }
+
+  // Confidence pill is intentionally omitted from the user-facing card — it is
+  // useful for debugging but reads as noise on Telegram. It still flows
+  // through evidence / analytics for observability.
+
+  // ---- LLM narrative (Groq synthesis) — surface BEFORE templated bullets so
+  //      the card feels conversational, not robotic. The narrative is already
+  //      grounded (Phase 5) and sanitized (groqProvider.sanitizeGeneratedText),
+  //      so we trim, escape, and clip to a sensible mobile-card length.
+  const trimmedAnswer =
+    typeof aiAnswer === "string" ? aiAnswer.trim() : "";
+  if (trimmedAnswer) {
+    lines.push("");
+    lines.push(escapeHtml(trimmedAnswer.slice(0, 700)));
+  }
+
+  // ---- Primary Use (symptoms) ----------------------------------------------
+  const symptomNames = (Array.isArray(evMed.symptoms) ? evMed.symptoms : [])
+    .slice(0, 3)
+    .map((s) => (s && typeof s === "object" ? s.name || s.symptom : s))
+    .filter(Boolean);
+  if (symptomNames.length) {
+    lines.push("");
+    lines.push("<b>Used for:</b>");
+    for (const s of symptomNames) lines.push(`• ${escapeHtml(String(s))}`);
+  }
+
+  // ---- Common Side Effects --------------------------------------------------
+  const sideEffectNames = (Array.isArray(evMed.sideEffects) ? evMed.sideEffects : [])
+    .slice(0, 3)
+    .map((s) => (s && typeof s === "object" ? s.effect || s.name : s))
+    .filter(Boolean);
+  if (sideEffectNames.length) {
+    lines.push("");
+    lines.push("<b>Common side effects:</b>");
+    for (const s of sideEffectNames) lines.push(`• ${escapeHtml(String(s))}`);
+  }
+
+  // ---- Key Safety Notes (from safety guard; disclaimer goes in footer) ------
+  const safetyNotes = (safety && Array.isArray(safety.notes) ? safety.notes : [])
+    .filter((n) => n && n !== MEDICAL_DISCLAIMER)
+    .slice(0, 3);
+  if (safetyNotes.length) {
+    lines.push("");
+    lines.push("<b>Key safety notes:</b>");
+    for (const note of safetyNotes) lines.push(`• ${escapeHtml(String(note))}`);
+  }
+
+  // ---- Alternatives ---------------------------------------------------------
+  const alternativeArr =
+    evidence && evidence.medicineContext && Array.isArray(evidence.medicineContext.alternatives)
+      ? evidence.medicineContext.alternatives
+      : [];
+  const alternativeNames = alternativeArr
+    .map((a) => (a && typeof a === "object" ? a.medicineName || a.genericName : a))
+    .filter(Boolean)
+    .slice(0, 4);
+  if (alternativeNames.length) {
+    lines.push("");
+    lines.push(
+      `<b>Alternatives:</b> ${alternativeNames.map((n) => escapeHtml(String(n))).join(", ")}`
+    );
+  }
+
+  // ---- Nearby Availability --------------------------------------------------
+  // Prefer MediAtlas enrichment when present (Task 9.4); fall back to OSM /
+  // Mongo-geo evidence (`evidence.pharmacyContext.pharmacies`). Either path
+  // surfaces the same card line so all wired layers reach the user.
+  const enrichmentPharmacies =
+    enr.pharmacies && Array.isArray(enr.pharmacies.items)
+      ? enr.pharmacies.items
+      : [];
+  const enrichmentInventory =
+    enr.inventory && Array.isArray(enr.inventory.items)
+      ? enr.inventory.items
+      : [];
+  const evidencePharmacies =
+    evidence && evidence.pharmacyContext && Array.isArray(evidence.pharmacyContext.pharmacies)
+      ? evidence.pharmacyContext.pharmacies
+      : [];
+  const nearbySource = enrichmentPharmacies.length
+    ? enrichmentPharmacies
+    : enrichmentInventory.length
+    ? enrichmentInventory
+    : evidencePharmacies;
+  const nearbyTop = nearbySource.slice(0, 3);
+  if (nearbyTop.length) {
+    lines.push("");
+    lines.push("<b>Nearby availability:</b>");
+    for (const p of nearbyTop) {
+      const name = pickName(p) || "Pharmacy";
+      const distStr = formatDistanceKm(p && p.distanceKm) || formatDistanceKm(p && p.distance);
+      const distPart = distStr ? ` • ${escapeHtml(distStr)}` : "";
+      const phonePart = p && p.phone ? ` • 📞 ${escapeHtml(String(p.phone))}` : "";
+      let stockPart = "";
+      if (p && p.inStock === true) stockPart = " • in stock";
+      else if (p && p.inStock === false) stockPart = " • call to confirm";
+      lines.push(`• ${escapeHtml(String(name))}${distPart}${phonePart}${stockPart}`);
+    }
+  }
+
+  // ---- Forecast -------------------------------------------------------------
+  if (enr.forecast && enr.forecast.demandLevel) {
+    lines.push("");
+    lines.push(
+      `<b>Forecast:</b> ${escapeHtml(String(enr.forecast.demandLevel))} demand expected.`
+    );
+  }
+
+  // ---- Expandable detail (aliases, salts, category, latency) — hidden from
+  //      the main card to reduce visual noise. Detail is still available via
+  //      the inline keyboard buttons (Side Effects / Alternatives / Save) and
+  //      is preserved on the workflow's evidence object for analytics. The
+  //      user-facing card stays focused on what matters: medicine + AI answer
+  //      + nearby + safety.
+
+  // ---- Footer: minimal safety reminder, no full disclaimer block ----------
+  if (lines.length) {
+    lines.push("");
+    lines.push(`<i>Always confirm dosage with a pharmacist or doctor.</i>`);
+  }
+
+  return lines.join("\n");
 };
 
 const buildSearchActionKeyboard = (query) => ({
@@ -392,6 +606,7 @@ const formatProductionHealth = (report = {}) => {
 module.exports = {
   buildSearchActionKeyboard,
   formatSearchResults,
+  formatMedicineCard,
   formatNotFound,
   formatSosConfirm,
   formatWelcome,

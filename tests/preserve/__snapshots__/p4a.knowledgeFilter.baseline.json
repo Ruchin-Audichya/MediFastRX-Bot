@@ -1,0 +1,83 @@
+[
+  {
+    "input": {},
+    "output": {}
+  },
+  {
+    "input": {
+      "source": "knowledge-base/medicines/pregabalin.md"
+    },
+    "output": {
+      "source": "knowledge-base/medicines/pregabalin.md"
+    }
+  },
+  {
+    "input": {
+      "category": "neuropathic_pain"
+    },
+    "output": {
+      "category": "neuropathic_pain"
+    }
+  },
+  {
+    "input": {
+      "trust": "curated"
+    },
+    "output": {
+      "trust": "curated"
+    }
+  },
+  {
+    "input": {
+      "updatedAt": "2026-01-01"
+    },
+    "output": {
+      "updatedAt": "2026-01-01"
+    }
+  },
+  {
+    "input": {
+      "source": "knowledge-base/symptoms/fever.md",
+      "category": "symptom",
+      "trust": "curated",
+      "updatedAt": "2026-02-15"
+    },
+    "output": {
+      "source": "knowledge-base/symptoms/fever.md",
+      "category": "symptom",
+      "trust": "curated",
+      "updatedAt": "2026-02-15"
+    }
+  },
+  {
+    "input": {
+      "source": "knowledge-base/medicines/dolo650.md",
+      "category": "analgesic",
+      "medicine": "Dolo650",
+      "generic": "Paracetamol",
+      "alias": "Crocin",
+      "irrelevantKey": "should-not-leak"
+    },
+    "output": {
+      "source": "knowledge-base/medicines/dolo650.md",
+      "category": "analgesic"
+    }
+  },
+  {
+    "input": {
+      "source": "",
+      "category": null,
+      "updatedAt": 0
+    },
+    "output": {}
+  },
+  {
+    "input": {
+      "telegramId": "u-123",
+      "category": "guideline"
+    },
+    "output": {
+      "category": "guideline"
+    }
+  }
+]

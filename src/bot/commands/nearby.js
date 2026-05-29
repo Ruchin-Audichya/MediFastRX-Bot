@@ -101,20 +101,25 @@ const handleLocation = async (ctx) => {
 
     const nearbyList = recommendation.ranked?.length
       ? recommendation.ranked
+          .slice(0, 5)
           .map((pharmacy, index) => {
-            const phone = pharmacy.phone ? `\n   📞 ${escapeHtml(pharmacy.phone)}` : "";
-            return `${index + 1}. <b>${escapeHtml(pharmacy.name)}</b>\n   📍 ${escapeHtml(pharmacy.address)}\n   Distance: <b>${escapeHtml(pharmacy.distance)}</b> · Match: <b>${Math.round(pharmacy.score * 100)}%</b>\n   ${escapeHtml(pharmacy.openStatus || "Hours unavailable")} · Source: ${escapeHtml(pharmacy.source || "unknown")}${phone}`;
+            const distance = pharmacy.distance ? `📍 ${escapeHtml(pharmacy.distance)}` : "📍";
+            const open = pharmacy.openStatus
+              ? (/open/i.test(pharmacy.openStatus) ? "🟢 Open" : `⏰ ${escapeHtml(pharmacy.openStatus)}`)
+              : "";
+            const phone = pharmacy.phone ? `📞 ${escapeHtml(pharmacy.phone)}` : "";
+            const meta = [distance, open, phone].filter(Boolean).join(" · ");
+            return `${index + 1}. <b>${escapeHtml(pharmacy.name)}</b>\n   ${meta}`;
           })
           .join("\n\n")
       : "No nearby pharmacies found for this location.";
 
     await ctx.reply(
-      `📍 <b>${escapeHtml(recommendation.ranked?.length ? `Found ${recommendation.ranked.length} pharmacy option(s) within ${recommendation.radiusKm} km.` : readiness.message)}</b>\n\n` +
+      (recommendation.ranked?.length
+        ? `📍 <b>${recommendation.ranked.length} pharmacies near you</b>  <i>within ${recommendation.radiusKm}km${recommendation.osmHydrated ? " · live" : ""}</i>\n\n`
+        : `📍 <b>${escapeHtml(readiness.message)}</b>\n\n`) +
         `${nearbyList}\n\n` +
-        `Active pharmacies tracked: <b>${readiness.activePharmacies}</b>\n` +
-        `Geo-ready pharmacies: <b>${readiness.geoIndexedPharmacies}</b>\n` +
-        `Search radius: <b>${recommendation.radiusKm} km</b>${recommendation.osmHydrated ? " · refreshed from OpenStreetMap" : ""}\n\n` +
-        `<i>Type a medicine name with “near me”, like: Dolo near me.</i>`,
+        `<i>Type a medicine name to check availability, or tap below to call/navigate.</i>`,
       {
         parse_mode: "HTML",
         reply_markup: buildNearbyActionKeyboard(recommendation.ranked),
@@ -127,39 +132,43 @@ const handleLocation = async (ctx) => {
 };
 
 const formatNearbyRecommendations = (recommendation, medicineQuery = "") => {
-  const medicineLine = medicineQuery
-    ? `Medicine: <b>${escapeHtml(recommendation.medicine?.genericName || medicineQuery)}</b>\n`
-    : "";
+  // Zomato/Uber-style nearby card: short, scannable, action-first.
+  // Each pharmacy gets one row with the essentials (name, distance, open),
+  // and the user picks an action via the inline keyboard (Call / Directions).
+  // No internal scores, no source labels, no debug counters — those live in
+  // analytics, not the user-facing card.
   if (!recommendation.ranked?.length) {
     return (
-      `📍 <b>No nearby pharmacy matches yet</b>\n\n` +
-      medicineLine +
-      `We checked within <b>${recommendation.radiusKm} km</b>. Try another location or browse /nearby by area.`
+      `📍 <b>No pharmacies nearby yet</b>\n\n` +
+      `We checked within <b>${recommendation.radiusKm} km</b>. Try sharing your live location again or pick an area with /nearby.`
     );
   }
 
-  const rows = recommendation.ranked.slice(0, 5).map((item, index) => {
-    const inventory = item.inventoryMatches?.length
-      ? `\n   Inventory: ${item.inventoryMatches.slice(0, 2).map((match) => escapeHtml(match.medicineName)).join(", ")}`
-      : "\n   Inventory: call to confirm";
-    const phone = item.phone ? `\n   📞 ${escapeHtml(item.phone)}` : "";
-    return (
-      `${index + 1}. <b>${escapeHtml(item.name)}</b>\n` +
-      `   Distance: <b>${escapeHtml(item.distance)}</b> · Match: <b>${Math.round(item.score * 100)}%</b>\n` +
-      `   Open status: <b>${escapeHtml(item.openStatus || "Hours unavailable")}</b>\n` +
-      `   Stock confidence: <b>${Math.round(item.inventoryConfidence * 100)}%</b> · Medicine confidence: <b>${Math.round((recommendation.medicineConfidence || 0) * 100)}%</b>\n` +
-      `   Popularity: <b>${Math.round((item.popularityScore || 0) * 100)}%</b> · Search success: <b>${Math.round((item.searchSuccessScore || 0) * 100)}%</b>${inventory}${phone}\n` +
-      `   Source: <b>${escapeHtml(item.source || "unknown")}</b>\n` +
-      `   📍 ${escapeHtml(item.address)}`
-    );
+  const headerMedicine = medicineQuery
+    ? `<b>${escapeHtml(recommendation.medicine?.genericName || medicineQuery)}</b>`
+    : "<b>Pharmacies near you</b>";
+  const radiusBadge = `<i>within ${recommendation.radiusKm}km${
+    recommendation.expandedRadius ? " (expanded)" : ""
+  }${recommendation.osmHydrated ? " · live" : ""}</i>`;
+
+  const top = recommendation.ranked.slice(0, 5);
+  const rows = top.map((item, index) => {
+    const name = `<b>${escapeHtml(item.name)}</b>`;
+    const distance = item.distance
+      ? `📍 ${escapeHtml(item.distance)}`
+      : "📍";
+    const open = item.openStatus
+      ? (/open/i.test(item.openStatus) ? "🟢 Open" : `⏰ ${escapeHtml(item.openStatus)}`)
+      : "";
+    const phone = item.phone ? `📞 ${escapeHtml(item.phone)}` : "";
+    const meta = [distance, open, phone].filter(Boolean).join(" · ");
+    return `${index + 1}. ${name}\n   ${meta}`;
   });
 
   return (
-    `📍 <b>Nearby Pharmacy Matches</b>\n` +
-    medicineLine +
-    `Search radius: <b>${recommendation.radiusKm} km</b>${recommendation.expandedRadius ? " (expanded)" : ""}${recommendation.osmHydrated ? " · refreshed from OpenStreetMap" : ""}\n\n` +
+    `📍 ${headerMedicine}  ${radiusBadge}\n\n` +
     `${rows.join("\n\n")}\n\n` +
-    `<i>Stock info may change. Call ahead to confirm.</i>`
+    `<i>Tap a button below to call or get directions.</i>`
   );
 };
 

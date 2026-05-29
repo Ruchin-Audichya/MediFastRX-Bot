@@ -28,7 +28,8 @@ test("search response is short, structured, and exposes action buttons", () => {
   const keyboard = buildSearchActionKeyboard("Dolo 650");
 
   assert.match(message, /Dolo 650/);
-  assert.match(message, /confidence/i);
+  assert.match(message, /Used for/i);
+  assert.match(message, /Availability/i);
   assert.match(message, /blockquote expandable/);
   assert.equal(keyboard.inline_keyboard[0][0].text, "📍 Nearby");
   assert.equal(keyboard.inline_keyboard[0][1].text, "⚠️ Side Effects");
