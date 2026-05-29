@@ -1,471 +1,177 @@
 # MediFast AI
 
-**India-first AI medicine assistant for intelligent medicine understanding, contextual healthcare assistance, and nearby pharmacy discovery.**
+Finding the right medicine in India is harder than it should be. You walk into a pharmacy with a parchi, the chemist shrugs, you call the next shop, then the next, and you still aren't sure if what you're buying is the right brand or the right salt. Most of us end up Googling on the way and trusting whichever blog ranks first that day.
+
+MediFast AI is a Telegram bot that turns that messy hunt into a quick conversation. You type a medicine, a symptom, or even a typo in Hinglish, and the bot pulls together what it knows from a verified Indian medicine catalog, a small RAG library of trusted notes, and a careful AI layer on top. Then it shows you nearby pharmacies, the kind where you can tap to call or open Google Maps. It tries to feel less like a search engine and more like asking a friend who happens to be a chemist.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-LLM%20Provider-F55036)
-![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C)
 ![Chroma](https://img.shields.io/badge/Chroma-Vector%20DB-5B5BD6)
 ![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
-![RAG](https://img.shields.io/badge/RAG-Evidence%20Retrieval-6B46C1)
-![AI](https://img.shields.io/badge/AI-Evidence%20Based-111827)
 
-MediFast AI turns a Telegram medicine bot into a product-grade healthcare assistant for India. It understands medicine brands, generics, salts, Hinglish symptom queries, family context, side effects, and nearby pharmacies while keeping deterministic systems as the source of truth.
+> A small but important note: MediFast helps you understand and discover medicines. It is not a doctor and never tries to act like one.
 
-Medical safety note: MediFast helps users discover medicine information and nearby pharmacy options. It is not a replacement for a doctor.
+## What it can actually do for you
 
-## Overview
+You can type a brand like `Dolo 650`, a generic like `Paracetamol`, a salt like `Pantoprazole`, a typo like `Prrgabakin`, or a Hinglish phrase like `bukhar ki tablet` or `gas ki dawa`. The bot will figure out which medicine you mean, give you a short conversational answer about what it is for, the common side effects to watch for, and a few alternatives. If your message is a follow-up like _"can my father take it"_ or _"what does it do"_, it remembers what you were just talking about and answers in context.
 
-MediFast AI is built for fast, local, family-friendly medicine discovery:
+If you share your location once, the bot turns into something closer to Zomato for medicines. It pulls live pharmacies near you from OpenStreetMap, lays them out by distance, shows whether they are open, and gives you tap-to-call and tap-to-navigate buttons. No fake numbers, no random listings.
 
-- Search Indian medicines by brand, generic, salt, alias, typo, or no-space names.
-- Understand Hinglish and Hindi-style queries like `bukhar ki tablet`, `sar dard`, and `gas acidity`.
-- Find nearby pharmacies using Telegram shared location and MongoDB geospatial search.
-- Preserve family context such as father has BP or mother has acidity.
-- Retrieve trusted medicine knowledge with RAG.
-- Use Groq/Llama only for evidence-based response synthesis, not as a medical source of truth.
-- Provide diagnostics, runtime tracing, analytics, and production health checks.
+The bot also has a soft fallback that came in this last release. When you ask about a medicine that is not yet in our verified catalog, it does not give up. It quietly asks the AI for a brief, sanitized summary, marks it clearly as compiled from general knowledge, and tells you to confirm with a pharmacist before using it. That answer is also logged in the background so an admin can promote good ones into the verified catalog over time. The bot literally gets smarter as people use it.
 
-## Features
+## How it stays safe
 
-- **Medicine intelligence:** brand to generic matching, salt matching, fuzzy matching, aliases, common spellings, and semantic fallback.
-- **Large catalog support:** import and normalize large Indian medicine datasets into `MedicineKnowledge`.
-- **Knowledge graph:** relationships for brand, generic, symptom, side effect, category, manufacturer, alternative, and refill behavior.
-- **Side-effect enrichment:** merge trusted side-effect CSV data into the medicine catalog.
-- **Hinglish smart search:** maps phrases like `bukhar`, `khansi`, `pet dard`, `gas`, and `ulti` to useful search intents.
-- **Family profiles:** store family members, conditions, medicines, and reorder patterns.
-- **Semantic memory:** retrieve useful past family facts during future conversations.
-- **Nearby pharmacy discovery:** uses Telegram location, MongoDB `2dsphere` queries, ranking, OSM import, and live fallback-ready services.
-- **Evidence-based orchestration:** router, tool registry, evidence collector, Groq provider, safety guard, and Telegram formatter.
-- **RAG:** Chroma or local vector mode over trusted knowledge files and activated medicine knowledge.
-- **Admin readiness:** `/health`, `/analytics`, `/status`, `/runtime`, `/trace`, `/nearby-debug`, and `/admindebug`.
-- **Production diagnostics:** medicine, catalog, RAG, LLM, memory, pharmacy, and full health checks.
+This part matters, especially for medicine. The AI never invents dosages, frequencies, durations, prescription advice, or stock claims. There is a system prompt that forbids it, and there is a second sanitizer in code that strips any `500 mg twice daily` or `take for 5 days` line if a model ever slips. The verified catalog stays the source of truth. The AI is allowed to write the friendly explanation around it, not the medical facts inside it.
 
-## What's New (Medicine Context Integrity Release)
+## Getting it running on your machine
 
-This release rebuilds MediFast around a single canonical `MedicineContext` that flows through every layer — entity extraction → router → tool executor → RAG → evidence integrity guard → orchestrator → Groq → formatter → Telegram. The result is a bot that no longer mixes up medicines mid-conversation, refuses to say "not found" on real-but-unknown medicines, and feels instant on Telegram.
-
-Highlights:
-
-- **Canonical MedicineContext** — frozen, confidence-scored, threaded end-to-end. Active medicine identity is preserved across follow-ups; switching to a new medicine works correctly.
-- **Smart follow-ups** — phrases like "what does it do", "can I take it daily", "can my father use it", "side effects", "what is the generic", "interactions with alcohol" all resolve against the active medicine without the user repeating the name.
-- **RAG contamination prevention** — medicine-aware retrieval scopes results to the active medicine's `medicine / generic / alias` metadata; the reranker uses a soft `medicineMatch` weight; an `evidenceIntegrity` guard validates every chunk before it reaches synthesis.
-- **LLM augment for unknown medicines** — when the catalog doesn't recognize a medicine (e.g., a new brand), Groq fills in a brief, sanitized general-knowledge answer with a clear "compiled from general knowledge — confirm with pharmacist" footnote. Every augmented answer is logged to `UnmatchedMedicineEnrichment` so admins can promote good answers into the verified catalog.
-- **Safety floor (never crossed)** — the LLM (any path) cannot output dosage, frequency, prescription advice, or stock claims. A post-LLM sanitizer strips dose patterns (`take 500 mg twice daily`, `every 6 hours`, `for 5 days`, etc.) before the user sees the message.
-- **ChatGPT-feel responses** — instant `🔎 Looking up X…` placeholder, then Telegram `editMessageText` swaps in the real card. Median perceived latency feels sub-second; cold-path resolver pre-warms 5,000 most-confident records at boot.
-- **Zomato-style nearby card** — clean numbered list with name, distance, open/closed badge, phone, tap-to-call and tap-to-navigate buttons. OSM live hydration when local Mongo coverage is thin.
-- **Deterministic-card fallback** — when Groq is off / fails / times out, every wired layer (context, evidence, enrichment, nearby) still reaches the user. No silent drops.
-- **Per-user TTL+LRU response cache** — repeat lookups about the same medicine reuse retrieval results within a 90s window for snappy follow-ups.
-- **Latency budgets verified** — deterministic p95 < 1500 ms, LLM p95 < 3500 ms on mocked dependencies.
-
-### Engineering signals
-
-- ~270 tests across exploration, preservation, unit, integration, and property-based tiers.
-- Property-based tests (P1–P6) cover contamination prevention, context retention, context switching, preservation, graceful degradation, and idempotent context construction.
-- Phase 7 MediAtlas integration is feature-flagged off but architecturally ready (the canonical context carries a reserved `enrichment` slot for inventory / forecast / substitutes / pharmacies).
-
-## Architecture Diagram
-
-![MediFast architecture](assets/readme/architecture-diagram.png)
-
-```mermaid
-flowchart TD
-  A["Telegram / future WhatsApp"] --> B["Bot handlers"]
-  B --> C["Entity extractor"]
-  C --> D["Ranked router"]
-  D --> E["Tool registry"]
-  E --> F["Medicine knowledge"]
-  E --> G["Fuse.js inventory"]
-  E --> H["Semantic memory"]
-  E --> I["RAG retrieval"]
-  E --> J["Pharmacy intelligence"]
-  E --> K["Family profiles"]
-  F --> L["Evidence collector"]
-  G --> L
-  H --> L
-  I --> L
-  J --> L
-  K --> L
-  L --> M["Groq / local LLM provider"]
-  M --> N["Safety guard"]
-  N --> O["Telegram response formatter"]
-```
-
-## How It Works
-
-![MediFast workflow](assets/readme/workflow-diagram.png)
-
-1. User sends a Telegram message.
-2. Entity extractor identifies medicine, symptom, person, location intent, side-effect intent, and reorder intent.
-3. Router returns ranked tool decisions.
-4. Tool executor calls deterministic systems such as MedicineKnowledge, Fuse.js search, RAG, memory, family, and pharmacy services.
-5. Evidence collector builds a structured evidence packet.
-6. Groq can synthesize a clean answer when enabled.
-7. Safety guard checks confidence and medical risk.
-8. Formatter sends a compact Telegram response with action buttons.
-
-## Medicine Intelligence
-
-MediFast keeps inventory and knowledge separate:
-
-- `Inventory`: stock, price, pharmacy, and availability.
-- `MedicineKnowledge`: name, generic, salts, brands, aliases, category, symptoms, side effects, precautions, and relationships.
-
-Matching order:
-
-```text
-exact match
-  -> alias match
-  -> brand match
-  -> salt match
-  -> fuzzy match
-  -> semantic match
-  -> clarification
-```
-
-Examples supported:
-
-```text
-Dolo 650
-Pregabalin
-Alprax
-Pantocid
-Telma AM
-MontekLC
-headache tablet
-bukhar ki tablet
-sugar medicine
-```
-
-## Nearby Pharmacy Intelligence
-
-Nearby search uses real user coordinates from Telegram.
-
-Flow:
-
-```text
-Telegram location
-  -> Mongo geo query
-  -> 5 km search
-  -> 10 km expansion if needed
-  -> OSM fallback-ready source layer
-  -> pharmacy enrichment
-  -> ranking
-  -> response card
-```
-
-Ranking considers:
-
-- distance
-- inventory confidence
-- pharmacy confidence
-- popularity score
-- source quality
-
-Returned result fields can include pharmacy name, phone, address, distance, open status, popularity score, inventory confidence, and source.
-
-## Semantic Memory
-
-MediFast stores structured facts instead of plain chat logs:
-
-```json
-{
-  "type": "condition",
-  "entity": "father",
-  "value": "BP",
-  "confidence": 0.9,
-  "source": "message"
-}
-```
-
-This allows flows like:
-
-```text
-User: Papa has BP and diabetes
-Later: medicine for papa
-Bot: uses family and memory context before responding
-```
-
-## RAG
-
-Knowledge files live in:
-
-```text
-knowledge-base/
-  medicines/
-  side_effects/
-  symptoms/
-  drug_interactions/
-  guidelines/
-  faq/
-```
-
-The RAG pipeline loads Markdown, PDF, and CSV files, chunks them, embeds them, stores vectors, retrieves context, reranks results, and passes evidence into the orchestrator.
-
-Vector modes:
-
-- Remote Chroma: set `CHROMA_URL=http://localhost:8000`
-- Local persistent mode: set `VECTOR_MODE=local` and use `data/chroma`
-
-## Knowledge Graph
-
-MediFast expands medicine relationships:
-
-```text
-brand <-> generic
-medicine <-> symptom
-medicine <-> disease
-medicine <-> side effect
-medicine <-> category
-medicine <-> alternative
-medicine <-> refill pattern
-medicine <-> pharmacy demand
-```
-
-The graph improves normalizer confidence, nearby medicine confidence, and RAG retrieval.
-
-## Groq Orchestration
-
-Groq is optional and evidence-based.
-
-It can summarize and combine:
-
-- medicine context
-- relationship graph context
-- semantic memory
-- RAG context
-- nearby pharmacy context
-- confidence scores
-
-It must not invent medicines, dosage, stock, or pharmacy availability.
-
-## Screenshots
-
-Screenshots can be added after Telegram testing:
-
-```text
-assets/readme/screenshots/
-  welcome.png
-  medicine-search.png
-  nearby-pharmacy.png
-  side-effects.png
-  runtime-trace.png
-```
-
-## Example Telegram Conversations
-
-```text
-User: Dolo 650
-Bot: Found Dolo 650. Generic: Paracetamol. Category: Pain/Fever. Confidence: high.
-     Actions: Nearby | Side Effects | Alternatives | Save
-```
-
-```text
-User: bukhar ki tablet
-Bot: I understood this as fever medicine search. I can show common fever-related options, but please consult a doctor for diagnosis or dosage.
-     Actions: Search Medicines | Nearby | Family
-```
-
-```text
-User: Dolo near me
-Bot: Share your location to find nearby pharmacies.
-     Button: Share Location
-```
-
-```text
-User: side effects of Pregabalin
-Bot: Retrieved Pregabalin knowledge and side-effect context from the catalog/RAG. Please review with a doctor, especially for prescription medicines.
-```
-
-```text
-User: Papa has BP and diabetes
-Bot: Saved this as family context. I will use it for safer future medicine discovery.
-```
-
-## Installation
+You need Node.js 18 or newer, a local MongoDB, a Telegram bot token from BotFather, and a Groq API key. With those four things, the rest is three commands.
 
 ```bash
-git clone https://github.com/Ruchin-Audichya/medifast-bot.git
-cd medifast-bot
+git clone https://github.com/Ruchin-Audichya/MediFastRX-Bot.git
+cd MediFastRX-Bot
 npm install
 ```
 
-Use Node.js 18 or newer.
-
-## Setup
-
-Create `.env` from `.env.example`:
+Copy the example environment file and fill in the four values that matter — your Telegram token, your Mongo URI, your Groq key, and the model name. Everything else has sensible defaults.
 
 ```bash
 cp .env.example .env
+# on Windows PowerShell, use:  Copy-Item .env.example .env
 ```
 
-For Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Start MongoDB locally or provide a hosted MongoDB URI.
-
-## Environment Variables
-
-Key groups:
+Open `.env` and set at least these:
 
 ```env
-# Telegram
-TELEGRAM_BOT_TOKEN=
-
-# MongoDB
+TELEGRAM_BOT_TOKEN=your_botfather_token
 MONGODB_URI=mongodb://localhost:27017/medifast
-
-# Groq / LLM
-LLM_PROVIDER=groq
-ENABLE_LLM_SYNTHESIS=false
-GROQ_API_KEY=
+GROQ_API_KEY=your_groq_key
 GROQ_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
-
-# RAG
-VECTOR_MODE=local
-CHROMA_URL=
-VECTOR_STORE_PATH=./data/chroma
-
-# Debug
-AI_DEBUG=false
+ENABLE_LLM_SYNTHESIS=true
+LLM_PROVIDER=groq
 ```
 
-Full documentation is in `.env.example`.
-
-## Running Locally
+Make sure MongoDB is running locally (`mongod`, or your service manager). Then start the bot:
 
 ```bash
 npm start
 ```
 
-Development mode:
+You should see three lines in the console — Mongo connecting, the Express server coming up on port 3001, and the bot saying it is in polling mode. Open Telegram, search for your bot's username, send `/start`, and you are in.
 
-```bash
-npm run dev
+If you want to develop on it with auto-reload, use `npm run dev` instead.
+
+## Try it like a user would
+
+Once the bot is running, this is the easiest tour:
+
+```
+You: Pregabalin
+Bot: 💊 Pregabalin
+     A short conversational answer with what it is used for and one safety note,
+     followed by primary use, side effects and alternatives, and a row of buttons.
+
+You: side effects
+Bot: continues from Pregabalin without you having to repeat the name.
+
+You: can my father take it
+Bot: same context, scoped to that medicine.
+
+You: bukhar ki tablet
+Bot: switches to a symptom-style suggestion path.
+
+You: Dolo 650 near me
+Bot: asks for your location once. Tap "Share Location" and it returns a clean list
+     of nearby pharmacies with distance, open status, and call/navigate buttons.
 ```
 
-Run a runtime trace:
+If you type a brand it does not know yet, it will quietly fetch a short AI-written summary, mark it as general-knowledge, and remember it for follow-ups. That is the new fallback in action.
 
-```bash
-npm run runtime -- "Dolo near me"
+## What is in the box
+
 ```
-
-## Commands
-
-User-facing Telegram commands include:
-
-```text
-/start
-/search
-/nearby
-/family
-/addmember
-/members
-/removeMember
-/health
-/analytics
-/status
-/runtime
-/trace
-/nearby-debug
-/admindebug
-```
-
-Data and diagnostics scripts:
-
-```bash
-npm run ingest
-npm run import-medicines
-npm run import-pharmacies
-npm run activate-data
-npm run catalog-status
-npm run cleanup-duplicates
-npm run diagnose-medicines
-npm run diagnose-catalog
-npm run diagnose-pharmacies
-npm run diagnose-rag
-npm run diagnose-llm
-npm run diagnose-memory
-npm run production-health
-```
-
-## Project Structure
-
-```text
 src/
-  ai/                 deterministic entity extraction, routing, safety
-  bot/                Telegram handlers and commands
-  cache/              medicine cache
-  diagnostics/        production health and runtime trace helpers
-  events/             event bus and analytics listeners
-  medicine/           catalog, importer, normalizer, graph, enrichment
-  memory/             summarization and semantic memory
-  models/             MongoDB schemas
-  orchestrator/       planning, tool execution, evidence collection
-  pharmacy/           nearby search, ranking, OSM source pipeline
-  providers/          Groq/local/deterministic provider abstractions
-  rag/                loaders, chunking, embeddings, retrieval, diagnostics
-  services/           reusable app services
-  utils/              formatters and helpers
+  ai/                deterministic entity extraction, routing, safety guard
+  bot/               Telegram handlers and commands
+  cache/             per-user response cache + medicine cache
+  context/           the canonical MedicineContext that flows end-to-end
+  diagnostics/       production health and runtime tracing
+  events/            event bus and analytics listeners
+  integrations/      MediAtlas client (off by default until keys are configured)
+  medicine/          catalog, importer, normalizer, graph, LLM augment service
+  memory/            semantic memory and summarization
+  models/            MongoDB schemas
+  orchestrator/      planner, tool executor, evidence collector, integrity guard
+  pharmacy/          nearby search, ranking, OSM hydration
+  providers/         Groq, local Llama, deterministic fallback
+  rag/               loaders, chunking, embeddings, retrieval, reranker
+  services/          search, conversation context, RAG service, intent engine
+  utils/             formatters and helpers
 
-knowledge-base/       trusted RAG documents
-data/medicine-sources medicine CSV/JSON drops
-scripts/              imports, diagnostics, health, runtime tracing
-tests/                Node test suite
-docs/                 architecture and testing documentation
-assets/readme/        GitHub diagrams
+knowledge-base/      curated RAG documents (medicines, side effects, symptoms)
+data/medicine-sources Indian medicine catalog drops
+scripts/             import, diagnostics, runtime trace, health checks
+tests/               exploration, preservation, unit, integration, property-based
+docs/                architecture and integration notes
 ```
 
-## Testing
+## Useful commands
 
-Run all tests:
+Day to day, you will mostly need three:
 
 ```bash
-npm test
+npm start                  # run the bot
+npm run dev                # run with auto-reload during development
+npm test                   # run the full test suite (270+ tests)
 ```
 
-Run formatting check:
+When something feels off, the diagnostics scripts are the fastest way to understand why:
 
 ```bash
-git diff --check
+npm run diagnose-medicines     # is the catalog loaded and resolving correctly?
+npm run diagnose-rag           # is the vector store happy?
+npm run diagnose-llm           # is Groq reachable, what is the latency?
+npm run diagnose-pharmacies    # do nearby queries return real results?
+npm run diagnose-memory        # is family memory persisting?
+npm run production-health      # one-shot health rollup
+npm run runtime -- "Dolo near me"   # trace a single message through every layer
 ```
 
-Pre-demo health:
+For data setup:
 
 ```bash
-npm run production-health
+npm run import-medicines       # import the medicine catalog from data/medicine-sources
+npm run import-pharmacies      # import seed pharmacies (OSM hydration runs live too)
+npm run ingest                 # re-ingest the RAG knowledge base
+npm run activate-data          # activate the catalog for the in-memory matcher
 ```
+
+## How a message flows
+
+When you send a message, the bot quietly walks through these stages.
+
+1. The text is normalized and an intent is extracted. The bot decides if you said a medicine, a symptom, mentioned a family member, or asked something else.
+2. The router decides which tools to call — medicine knowledge, RAG, semantic memory, nearby pharmacies, family profile.
+3. Independent tools run in parallel. There is a small per-user cache so repeated lookups about the same medicine reuse the previous results within a short window.
+4. An evidence collector packs everything into a single shape. An integrity guard then validates that every chunk actually belongs to the medicine you asked about, so RAG cannot leak Gabapentin into a Pregabalin answer.
+5. Groq writes a short, friendly narrative on top of that evidence, scoped only to the active medicine. If Groq fails, times out, or is disabled, the bot falls back to a deterministic card that still carries every layer through.
+6. The formatter renders a clean Telegram card and sends it. While the heavy work is happening, you see a quick "Looking up X…" message that gets edited in place when the real card arrives. That is what makes it feel near-instant.
+
+## What changed in the last release
+
+The bot used to feel like a templated search engine that occasionally lost track of what you were just talking about. After a few days of testing it, three things were broken — the bot mixed up medicines mid-conversation, it gave up on anything not in the catalog, and the message style felt robotic and slow.
+
+This release rebuilt the core. There is now a single canonical `MedicineContext` that flows through every layer end-to-end, so follow-ups stay on the right medicine. RAG retrieval is medicine-aware and an integrity guard drops chunks that do not belong. The card got cleaner — no more confidence percentages or aliases blockquotes — and the AI line goes on top so it reads like a friend explaining, not a database dump. Replies feel much faster because of two-stage send and a per-user cache. And when you ask about a brand the catalog does not know yet, the bot fills in a sanitized AI summary, marks it honestly, and logs it for admin promotion later. The safety floor — never invent dosage, prescription advice, or stock — is enforced both in the system prompt and in a code-level sanitizer.
 
 ## Roadmap
 
-- Complete full catalog vector activation beyond the current partial coverage.
-- Add more verified India-specific medicine data sources.
-- Add WhatsApp adapter.
-- Add pharmacy live stock integrations.
-- Add guardian notification flows with explicit user consent.
-- Add voice-note understanding.
-- Add dashboard for top medicines, symptoms, locations, and failed lookups.
-- Add open-source LLM deployment path for cheaper private inference.
+- Pharmacy live stock checks via partner integrations or MediAtlas going GA.
+- WhatsApp adapter that mirrors the Telegram experience.
+- Voice notes — "Dolo near me" spoken into Telegram.
+- A small admin dashboard for catalog health, top searches, and promoting AI-augmented answers into the verified catalog.
+- Open-source LLM deployment path so private inference becomes cheap.
 
-## Future Improvements
+## Built by
 
-- Better medicine disambiguation for same-brand combinations.
-- Stronger prescription-risk classifier.
-- More robust open/closed pharmacy hours from OSM tags.
-- City-wise pharmacy import jobs for all major Indian cities.
-- Chroma deployment profile for production.
-- Admin web dashboard.
-- Continuous catalog quality scoring.
-
-## Contributors
-
-Built by Ruchin Audichya as an India-first healthcare assistant MVP.
-
-## License
-
-Add a license before public production use if this repository is intended for open-source distribution.
+Ruchin Audichya, as an India-first healthcare assistant MVP.
