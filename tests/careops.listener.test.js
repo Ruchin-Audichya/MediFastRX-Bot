@@ -87,3 +87,27 @@ test("medicine.lookup.failed WITHOUT family member → plain shortage", async ()
   assert.ok(cases.some((c) => c.category === "shortage"));
   assert.ok(!cases.some((c) => c.category === "family_care"));
 });
+
+test("medicine.lookup.failed with handledInline:true → listener skips (no duplicate)", async () => {
+  await reset();
+  __resetForTests();
+  const bus = new EventEmitter();
+  registerCareOpsListener(bus);
+
+  bus.emit("medicine.lookup.failed", {
+    telegramId: "L4",
+    query: "Pregabalin",
+    normalizedQuery: "pregabalin",
+    familyMemberName: "Papa",
+    relation: "father",
+    suggestions: [],
+    handledInline: true, // search handler already created the operation inline
+  });
+  await settle();
+
+  // Listener must NOT create anything — avoids duplicate incidents/cases.
+  const cases = await models.CareCase.find().lean();
+  const incidents = await models.CareIncident.find().lean();
+  assert.equal(cases.length, 0, "listener should skip when handledInline");
+  assert.equal(incidents.length, 0, "listener should skip when handledInline");
+});

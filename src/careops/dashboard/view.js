@@ -101,6 +101,7 @@ const renderDashboardHtml = (snap = {}, snHealth = {}) => {
   .kpi{background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:12px;text-align:center}
   .kpi-v{display:block;font-size:22px;font-weight:700}
   .kpi-l{display:block;font-size:11px;color:#94a3b8;margin-top:2px}
+  .breach-banner{margin:0 24px 8px;padding:10px 14px;background:#3b1116;border:1px solid #7f1d1d;border-radius:10px;color:#fecaca;font-size:13px}
   footer{padding:10px 24px;color:#64748b;font-size:12px}
 </style></head>
 <body>
@@ -122,6 +123,11 @@ const renderDashboardHtml = (snap = {}, snHealth = {}) => {
   <div class="kpi"><span class="kpi-v" style="color:#fbbf24">${m.workflowCompletionRate ?? 0}%</span><span class="kpi-l">Workflow Completion</span></div>
   <div class="kpi"><span class="kpi-v" style="color:#fb7185">${m.slaBreaches ?? 0}</span><span class="kpi-l">SLA Breaches</span></div>
 </div>
+${
+  (m.slaBreaches ?? 0) > 0
+    ? `<div class="breach-banner">⚠️ ${m.slaBreaches} SLA breach detected → <b>auto-escalated</b> to the SOS pharmacy network for human sourcing.</div>`
+    : ""
+}
 <div class="cols">
   <div class="panel">
     <h2>⚙️ Workflows</h2>

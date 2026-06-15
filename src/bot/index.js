@@ -169,6 +169,11 @@ const createBot = () => {
     await handleSos(ctx, medicineName);
   });
 
+  bot.callbackQuery("careops:status", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleCareOpsSummary(ctx);
+  });
+
   bot.callbackQuery("prompt_search", async (ctx) => {
     await ctx.answerCallbackQuery();
     await ctx.reply(

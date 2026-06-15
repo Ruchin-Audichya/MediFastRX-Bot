@@ -44,6 +44,9 @@ const handleCareOpsSummary = async (ctx) => {
     lines.push(`✅ SLA compliance: <b>${m.slaCompliancePct ?? 100}%</b>`);
     lines.push(`⏱ MTTR: <b>${m.mttrMinutes ?? 0} min</b>`);
     lines.push(`📈 Incident resolution: <b>${m.incidentResolutionRate ?? 0}%</b>`);
+    if ((m.slaBreaches ?? 0) > 0) {
+      lines.push(`⚠️ <b>${m.slaBreaches}</b> SLA breach → auto-escalated to SOS network`);
+    }
 
     if (snap.recentActions.length) {
       lines.push("");

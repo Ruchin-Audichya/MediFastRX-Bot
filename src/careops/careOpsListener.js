@@ -54,6 +54,10 @@ const registerCareOpsListener = (eventBus) => {
   // When a family member is named, run the flagship composite journey
   // (Family Case + Shortage Workflow + Incident + follow-up Task).
   eventBus.on("medicine.lookup.failed", (payload = {}) => {
+    // If the search handler already created the shortage operation inline (so
+    // it could surface the live incident number in chat), skip here to avoid
+    // duplicate incidents.
+    if (payload.handledInline) return;
     const { telegramId, query, normalizedQuery, familyMemberName, relation } = payload;
     const alternatives = Array.isArray(payload.suggestions)
       ? payload.suggestions.map((s) => s.medicineName || s.genericName || s).filter(Boolean)
