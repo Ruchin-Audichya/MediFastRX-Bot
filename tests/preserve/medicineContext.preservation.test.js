@@ -315,7 +315,10 @@ test("P4.c — formatSearchResults unchanged for non-medicine flows", async (t) 
     sideEffects: [],
     precautions: [],
     alternatives: [],
-    lastVerified: new Date("2026-01-01T00:00:00Z").toISOString(),
+    // Deterministic fixture: `null` renders a stable "Verified: Unknown" so
+    // the snapshot does not drift with wall-clock time (formatVerifiedTime
+    // computes age from Date.now()).
+    lastVerified: null,
     pharmacy: {
       name: "Test Pharmacy",
       area: "Test Area",

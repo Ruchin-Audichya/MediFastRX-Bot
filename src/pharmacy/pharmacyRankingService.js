@@ -11,6 +11,27 @@ const DEFAULT_WEIGHTS = {
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 
+// Chain recognition — known reliable Indian pharmacy chains get a small trust
+// signal + a display badge. Unknown/independent stores are neutral (bonus 0),
+// so existing ranking scores for non-chain fixtures are unchanged.
+const KNOWN_CHAINS = [
+  { match: /apollo/i, label: "Apollo", badge: "🏥 Apollo" },
+  { match: /medplus|med plus/i, label: "MedPlus", badge: "🏥 MedPlus" },
+  { match: /wellness\s*forever/i, label: "Wellness Forever", badge: "🏥 Wellness Forever" },
+  { match: /netmeds/i, label: "Netmeds", badge: "🏥 Netmeds" },
+  { match: /1\s*mg|tata\s*1mg/i, label: "Tata 1mg", badge: "🏥 1mg" },
+  { match: /pharmeasy/i, label: "PharmEasy", badge: "🏥 PharmEasy" },
+  { match: /guardian/i, label: "Guardian", badge: "🏥 Guardian" },
+  { match: /jan\s*aushadhi/i, label: "Jan Aushadhi", badge: "🏛 Jan Aushadhi" },
+];
+
+const recognizeChain = (name = "") => {
+  for (const chain of KNOWN_CHAINS) {
+    if (chain.match.test(String(name))) return chain;
+  }
+  return null;
+};
+
 const distanceScoreFor = (distanceKm, radiusKm) => {
   if (!Number.isFinite(distanceKm)) return 0;
   if (!radiusKm || radiusKm <= 0) return 0;
@@ -65,12 +86,17 @@ const rankPharmacies = ({
       const popularityScore = clamp01(popularityByPharmacy.get(pharmacy.name) ?? pharmacy.popularityScore ?? 0);
       const searchSuccessScore = clamp01(successByPharmacy.get(pharmacy.name) ?? pharmacy.searchSuccessScore ?? 0);
       const openStatus = openStatusFor(pharmacy);
+      const chain = recognizeChain(pharmacy.name);
+      // Chain bonus is 0 for independents (preserves existing fixture scores)
+      // and a small additive trust nudge for recognized chains.
+      const chainBonus = chain ? Number(process.env.PHARMACY_CHAIN_BONUS || 0.04) : 0;
       const score =
         distanceScore * weights.distanceWeight +
         inventoryScore * weights.inventoryWeight +
         confidence * weights.confidenceWeight +
         popularityScore * weights.popularityWeight +
-        searchSuccessScore * weights.successWeight;
+        searchSuccessScore * weights.successWeight +
+        chainBonus;
 
       return {
         pharmacy,
@@ -80,6 +106,10 @@ const rankPharmacies = ({
         source: pharmacy.source || pharmacy.sourceMetadata?.source || "unknown",
         openingHours: pharmacy.openingHours,
         openStatus: openStatus.label,
+        openScore: openStatus.score,
+        isOpenNow: openStatus.score >= 0.9,
+        chain: chain ? chain.label : null,
+        chainBadge: chain ? chain.badge : null,
         coordinates,
         directionsUrl: coordinates
           ? `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}`
@@ -97,9 +127,34 @@ const rankPharmacies = ({
     })
     .sort((a, b) => b.score - a.score);
 
+// Best Option Nearby — pick the single strongest pharmacy and explain WHY.
+// Used by the bot to render a "⭐ Best option" recommendation above the list.
+const bestOptionNearby = (ranked = []) => {
+  if (!ranked.length) return null;
+  const top = ranked[0];
+  const reasons = [];
+  if (top.isOpenNow) reasons.push("open now");
+  if (top.distanceKm != null) reasons.push(`${top.distance} away`);
+  if (top.chain) reasons.push(`${top.chain} (trusted chain)`);
+  if (top.inventoryConfidence >= 0.6) reasons.push("likely in stock");
+  if (top.phone) reasons.push("callable");
+  return {
+    name: top.name,
+    phone: top.phone,
+    distance: top.distance,
+    chainBadge: top.chainBadge,
+    directionsUrl: top.directionsUrl,
+    openStatus: top.openStatus,
+    score: top.score,
+    reason: reasons.join(" · ") || "closest match",
+  };
+};
+
 module.exports = {
   DEFAULT_WEIGHTS,
   distanceScoreFor,
   openStatusFor,
+  recognizeChain,
   rankPharmacies,
+  bestOptionNearby,
 };

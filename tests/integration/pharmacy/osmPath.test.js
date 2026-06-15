@@ -74,19 +74,18 @@ test("OSM path — environment is correctly configured", () => {
 test("OSM path — formatNearbyRecommendations renders a recognizable nearby card", async (t) => {
   const html = formatNearbyRecommendations(osmRecommendation, "Paracetamol");
 
-  await t.test("OSM hydration marker is surfaced", () => {
-    assert.match(html, /refreshed from OpenStreetMap/);
+  await t.test("live OSM hydration marker is surfaced", () => {
+    assert.match(html, /· live/);
   });
 
   await t.test("medicine line is present", () => {
-    assert.match(html, /Medicine: <b>Paracetamol<\/b>/);
+    assert.match(html, /<b>Paracetamol<\/b>/);
   });
 
-  await t.test("pharmacy name, distance, phone and source surface", () => {
+  await t.test("pharmacy name, distance and phone surface", () => {
     assert.match(html, /Apollo Pharmacy/);
-    assert.match(html, /Distance: <b>0\.8 km<\/b>/);
+    assert.match(html, /0\.8 km/);
     assert.match(html, /📞 0141-1234567/);
-    assert.match(html, /Source: <b>OpenStreetMap<\/b>/);
   });
 
   await t.test("no MediAtlas-only labels leak into the OSM card", () => {

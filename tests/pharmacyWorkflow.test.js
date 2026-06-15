@@ -34,7 +34,7 @@ test("formats nearby pharmacy recommendation response", () => {
     "Dolo"
   );
 
-  assert.match(message, /Nearby Pharmacy Matches/);
+  assert.match(message, /Jaipur Medicos/);
   assert.match(message, /Paracetamol/);
-  assert.match(message, /Dolo 650 Tablet/);
+  assert.match(message, /within 5km/);
 });

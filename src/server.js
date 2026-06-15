@@ -5,6 +5,8 @@ const rateLimit = require("express-rate-limit");
 const Inventory = require("./models/Inventory");
 const Pharmacy = require("./models/Pharmacy");
 const { searchMedicine } = require("./services/searchService");
+const { createCareOpsRouter } = require("./careops/dashboard/router");
+const { createWhatsAppRouter } = require("./integrations/whatsapp/router");
 const logger = require("./utils/logger");
 
 const createServer = (bot) => {
@@ -91,6 +93,15 @@ const createServer = (bot) => {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // ── CareOps Dashboard + API ────────────────────────────────────────────────
+  // Judge-facing operations board at GET /careops and JSON at /api/careops/*.
+  app.use(createCareOpsRouter());
+
+  // ── WhatsApp Cloud API webhook ──────────────────────────────────────────────
+  // GET  /webhook/whatsapp → Meta verification handshake
+  // POST /webhook/whatsapp → inbound messages (reuses the medicine pipeline)
+  app.use(createWhatsAppRouter());
 
   // ── 404 ───────────────────────────────────────────────────────────────────
   app.use((req, res) => {

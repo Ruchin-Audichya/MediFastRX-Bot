@@ -24,15 +24,18 @@ const {
 } = require("./commands/admin");
 const { isAdmin } = require("./middleware/adminGuard");
 const { rateLimiter } = require("./middleware/rateLimiter");
-const { formatWelcome, formatHelp } = require("../utils/formatter");
+const { formatWelcome, formatHelp, escapeHtml } = require("../utils/formatter");
 const { setLanguage } = require("../services/familyService");
 const { addConversationTurn } = require("../services/memoryService");
 const { resolveContextualQuery } = require("../services/conversationContextService");
 const { getSessionLocation, shareLocationKeyboard } = require("../pharmacy/pharmacyLocationService");
+const { recommendNearbyPharmacies } = require("../pharmacy/pharmacyRecommendationService");
 const eventBus = require("../events/eventBus");
 const { registerAnalyticsListener } = require("../events/listeners/analyticsListener");
 const { registerGuardianAlertListener } = require("../events/listeners/guardianAlertListener");
 const { registerSearchHistoryListener } = require("../events/listeners/searchHistoryListener");
+const { registerCareOpsListener } = require("../careops/careOpsListener");
+const { handleCareOpsSummary } = require("./commands/careops");
 const logger = require("../utils/logger");
 
 const createBot = () => {
@@ -40,6 +43,9 @@ const createBot = () => {
   registerSearchHistoryListener(eventBus);
   registerGuardianAlertListener(eventBus, bot);
   registerAnalyticsListener(eventBus);
+  // CareOps: ServiceNow-style operations layer. Purely additive — subscribes
+  // to events the bot already emits; never modifies core medicine/pharmacy flows.
+  registerCareOpsListener(eventBus);
 
   // ── Global Middleware ─────────────────────────────────────────────────────
   bot.use(rateLimiter);
@@ -103,6 +109,11 @@ const createBot = () => {
     const medicineName = ctx.match?.trim();
     await handleSos(ctx, medicineName);
   });
+
+  // ── CareOps Command ───────────────────────────────────────────────────────
+  // Judge-facing operations summary: open cases / tasks / incidents / workflows
+  // and the recent autonomous agent-action stream.
+  bot.command("careops", handleCareOpsSummary);
 
   // ── Nearby / Areas ────────────────────────────────────────────────────────
   bot.command("nearby", handleNearby);
@@ -265,6 +276,50 @@ const createBot = () => {
   bot.callbackQuery(/^search_intent:(.+)$/, async (ctx) => {
     await ctx.answerCallbackQuery();
     await handleSearch(ctx, ctx.match[1]);
+  });
+
+  // ── Medication Fulfillment ──────────────────────────────────────────────
+  // "Start Fulfillment" on the nearby card → create a real CareOps fulfillment
+  // workflow + task (and a live ServiceNow task when enabled).
+  bot.callbackQuery(/^fulfill:(.+)$/, async (ctx) => {
+    const medicineQuery = ctx.match[1];
+    await ctx.answerCallbackQuery("Starting fulfillment…");
+    try {
+      const { runMedicationFulfillment } = require("../careops/workflowEngine");
+      const location = await getSessionLocation(ctx.from.id);
+      let pharmacy = {};
+      if (location) {
+        const rec = await recommendNearbyPharmacies({
+          telegramId: ctx.from.id,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          medicineQuery,
+        });
+        const top = rec.ranked?.[0];
+        if (top) pharmacy = { name: top.name, phone: top.phone, distance: top.distance };
+      }
+      const result = await runMedicationFulfillment({
+        telegramId: ctx.from.id,
+        medicine: { medicineName: medicineQuery },
+        pharmacy,
+      });
+      const taskNo = result?.task?.taskNumber || "TASK";
+      const lines = [
+        "🩺 <b>Medication fulfillment started</b>",
+        "",
+        "✔ Task created",
+        "✔ Pharmacy tracking started",
+        "",
+        `Reference: <b>${escapeHtml(taskNo)}</b>`,
+        pharmacy.name ? `Pharmacy: <b>${escapeHtml(pharmacy.name)}</b>` : "",
+        "",
+        "I'll keep tracking this request for you.",
+      ].filter(Boolean);
+      await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+    } catch (err) {
+      logger.error(`Fulfillment error: ${err.message}`);
+      await ctx.reply("⚠️ Could not start fulfillment right now. Please try again.");
+    }
   });
 
   bot.callbackQuery(/^area:(.+)$/, async (ctx) => {

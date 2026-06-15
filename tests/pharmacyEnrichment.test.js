@@ -52,9 +52,9 @@ test("nearby formatter shows enriched pharmacy intelligence", () => {
     "Dolo"
   );
 
-  assert.match(message, /Open status/);
-  assert.match(message, /Popularity/);
-  assert.match(message, /Medicine confidence/);
+  assert.match(message, /🟢 Open|⏰/);
+  assert.match(message, /Popular Medicos/);
+  assert.match(message, /Dolo/);
 });
 
 test("open status parser handles 24x7 pharmacies", () => {

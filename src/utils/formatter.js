@@ -405,6 +405,151 @@ const formatMedicineCard = (medicineContext, opts = {}) => {
   return lines.join("\n");
 };
 
+// ---------------------------------------------------------------------------
+// CONVERSATIONAL MODE (UX redesign) — short, WhatsApp-like, action-oriented.
+// One or two friendly lines + quick-action buttons. Technical detail (aliases,
+// confidence, evidence) is intentionally omitted; it only appears when the user
+// explicitly taps "Side effects" / "Alternatives". Safety floor preserved: the
+// AI answer is already sanitized upstream (no dosage/stock invented).
+// ---------------------------------------------------------------------------
+
+// A concise primary-use sentence for a medicine. Prefers symptoms/uses; falls
+// back to the category map. Never includes dosage.
+const conversationalUseLine = (medicineName, evMed = {}, aiAnswer = "") => {
+  const name = medicineName || "This medicine";
+  // Prefer a short, already-sanitized AI sentence when available.
+  const trimmed = String(aiAnswer || "").trim();
+  if (trimmed) {
+    const firstSentence = trimmed.split(/(?<=[.!?])\s/)[0] || trimmed;
+    return escapeHtml(firstSentence.slice(0, 200));
+  }
+  const uses = uniqueList([...(evMed.symptoms || []), ...(evMed.diseases || [])])
+    .map((s) => (s && typeof s === "object" ? s.name || s.symptom : s))
+    .filter(Boolean)
+    .slice(0, 2);
+  if (uses.length) {
+    return `${escapeHtml(name)} is commonly used for ${escapeHtml(uses.join(" and "))}.`;
+  }
+  const cat = evMed.category ? formatUseCase(evMed) : null;
+  return cat
+    ? `${escapeHtml(name)} is used for ${escapeHtml(cat)}.`
+    : `${escapeHtml(name)} — here's what I can help with.`;
+};
+
+// Short conversational medicine reply: 1 line + offer of next actions.
+const formatConversationalMedicine = (medicineName, { evMed = {}, aiAnswer = "" } = {}) => {
+  const lines = [];
+  lines.push(`💊 <b>${escapeHtml(medicineName)}</b>`);
+  lines.push("");
+  lines.push(conversationalUseLine(medicineName, evMed, aiAnswer));
+  lines.push("");
+  lines.push("What would you like next?");
+  return lines.join("\n");
+};
+
+// Quick-action keyboard for the conversational medicine reply.
+const buildQuickActionKeyboard = (query) => {
+  const q = String(query || "").substring(0, 44);
+  return {
+    inline_keyboard: [
+      [{ text: "📍 Nearby pharmacies", callback_data: `nearby_medicine:${q}` }],
+      [
+        { text: "⚠️ Side effects", callback_data: `details:side:${q}` },
+        { text: "🔁 Alternatives", callback_data: `details:alt:${q}` },
+      ],
+    ],
+  };
+};
+
+// Conversational nearby card: clean list + per-pharmacy actions are exposed via
+// the keyboard. Chains are badged; open status uses traffic-light emojis.
+const formatConversationalNearby = (recommendation, medicineQuery = "") => {
+  const ranked = recommendation?.ranked || [];
+  if (!ranked.length) {
+    return `📍 I couldn't find pharmacies near you yet. Try sharing your location again or send your PIN code.`;
+  }
+  const med = medicineQuery
+    ? escapeHtml(recommendation.medicine?.genericName || medicineQuery)
+    : null;
+  const lines = [];
+  lines.push(med ? `📍 Pharmacies that may stock <b>${med}</b>:` : "📍 Pharmacies near you:");
+  lines.push("");
+  ranked.slice(0, 5).forEach((p) => {
+    const badge = p.chainBadge ? `${escapeHtml(p.chainBadge)} ` : "";
+    const dist = p.distance ? `📍 ${escapeHtml(p.distance)} away` : "";
+    const open =
+      p.isOpenNow || /open/i.test(p.openStatus || "")
+        ? "🟢 Open now"
+        : /clos/i.test(p.openStatus || "")
+        ? "🟡 Closing soon"
+        : "";
+    lines.push(`${badge}<b>${escapeHtml(p.name)}</b>`);
+    lines.push(`   ${[dist, open].filter(Boolean).join("  ")}`.trimEnd());
+  });
+  lines.push("");
+  lines.push("Need help obtaining the medicine?");
+  return lines.join("\n");
+};
+
+// Keyboard for the conversational nearby card: Call + Navigate on the top
+// pharmacy, plus a Start Fulfillment CTA.
+const buildNearbyConversationalKeyboard = (ranked = [], medicineQuery = "") => {
+  const rows = [];
+  const top = ranked?.[0];
+  if (top) {
+    const actionRow = [];
+    if (top.phone) {
+      actionRow.push({
+        text: "📞 Call",
+        callback_data: `pharmacy_call:${String(top.phone).replace(/\s+/g, "").substring(0, 42)}`,
+      });
+    }
+    if (top.directionsUrl) {
+      actionRow.push({ text: "🗺 Navigate", url: top.directionsUrl });
+    }
+    if (actionRow.length) rows.push(actionRow);
+  }
+  rows.push([
+    {
+      text: "🩺 Start Fulfillment",
+      callback_data: `fulfill:${String(medicineQuery || top?.name || "").substring(0, 50)}`,
+    },
+  ]);
+  return { inline_keyboard: rows };
+};
+
+// ---------------------------------------------------------------------------
+// Apollo Pharmacy results card — real India-market brands/prices/availability
+// from the Parse-built apollopharmacy.in API. Rendered when the local catalog
+// has no match but Apollo returns live products. Prices/stock are clearly
+// attributed to Apollo so the bot reads as a knowledgeable pharmacy assistant.
+// ---------------------------------------------------------------------------
+const formatApolloResults = (query, results = []) => {
+  if (!results.length) return "";
+  const lines = [];
+  lines.push(`💊 <b>${escapeHtml(query)}</b> — live options at Apollo Pharmacy`);
+  lines.push("");
+  results.slice(0, 5).forEach((r) => {
+    const price =
+      r.price != null
+        ? `₹${r.price}${r.mrp && r.mrp !== r.price ? ` <s>₹${r.mrp}</s>` : ""}${
+            r.discountPercentage ? ` (${r.discountPercentage}% off)` : ""
+          }`
+        : "Price N/A";
+    const stock = r.inStock === true ? "🟢 In stock" : r.inStock === false ? "🔴 Out of stock" : "";
+    const rx = r.prescriptionRequired ? " · 📋 Rx" : "";
+    lines.push(`• <b>${escapeHtml(r.medicineName)}</b>`);
+    const meta = [price, r.packSize ? escapeHtml(String(r.packSize)) : null, stock]
+      .filter(Boolean)
+      .join(" · ");
+    lines.push(`  ${meta}${rx}`);
+    if (r.manufacturer) lines.push(`  <i>by ${escapeHtml(r.manufacturer)}</i>`);
+  });
+  lines.push("");
+  lines.push("<i>Live data from Apollo Pharmacy. Confirm with a pharmacist before use.</i>");
+  return lines.join("\n");
+};
+
 const buildSearchActionKeyboard = (query) => ({
   inline_keyboard: [
     [
@@ -502,6 +647,8 @@ const formatHelp = () => {
     `/removeMember &lt;name&gt; — Remove a member\n\n` +
     `<b>🆘 SOS</b>\n` +
     `/sos &lt;name&gt; — Alert the network for a rare/unavailable medicine\n\n` +
+    `<b>🩺 CareOps</b>\n` +
+    `/careops — Live healthcare operations: cases, tasks, incidents, workflows\n\n` +
     `<b>📍 Browse</b>\n` +
     `/nearby — Find pharmacies by area\n` +
     `/areas — List all covered areas\n\n` +
@@ -607,6 +754,11 @@ module.exports = {
   buildSearchActionKeyboard,
   formatSearchResults,
   formatMedicineCard,
+  formatApolloResults,
+  formatConversationalMedicine,
+  formatConversationalNearby,
+  buildQuickActionKeyboard,
+  buildNearbyConversationalKeyboard,
   formatNotFound,
   formatSosConfirm,
   formatWelcome,

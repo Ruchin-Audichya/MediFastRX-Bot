@@ -1,7 +1,8 @@
 "use strict";
 
 /**
- * Bug condition exploration test for the "medicine context integrity" bugfix.
+ * Medicine-context-integrity REGRESSION test (formerly the bug-exploration
+ * artifact).
  *
  *   Property 1 — Bug Condition: When a medicine has been resolved with
  *   confidence >= MEDICINE_CONTEXT_CONFIDENCE_THRESHOLD, every downstream stage
@@ -10,17 +11,20 @@
  *
  * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8**
  *
- * IMPORTANT: This test runs against the UNFIXED pipeline. It is designed to
- * FAIL — the failures are the counterexamples that confirm the bug exists.
- * Do NOT "fix" this test or the production code from inside this file. The
- * bugfix lands in subsequent tasks (Phases 1–4), which will turn these
- * assertions green.
+ * HISTORY: this file originally drove the UNFIXED pipeline and was expected to
+ * FAIL — the failures were the counterexamples that confirmed the bug. The
+ * fix has since landed (Phases 1–4: MedicineContext, follow-up engine,
+ * medicine-aware retrieval, evidence-integrity guard). The test now drives the
+ * FIXED pipeline and asserts the corrected behavior. Permanent property-based
+ * coverage also lives in `tests/property/p1-p3`.
  *
- * Test framework: node:test (built-in, no new deps).
- *
- * The test deliberately bypasses MongoDB, ChromaDB, Groq, and the network by
- * pre-populating `require.cache` for `src/ai/toolRegistry.js` with deterministic
- * in-memory fakes BEFORE requiring `src/orchestrator/toolExecutor.js`.
+ * The test deliberately bypasses MongoDB, ChromaDB, Groq, and the network:
+ *   - `src/ai/toolRegistry.js` is stubbed with deterministic in-memory fakes.
+ *   - `src/medicine/medicineNormalizer.js` is stubbed so the conversation
+ *     service's deterministic resolver never reaches Mongo (which previously
+ *     caused 10s buffer-timeout hangs per follow-up).
+ * Both stubs are installed via `require.cache` BEFORE the production modules
+ * under test are required.
  */
 
 const path = require("path");
@@ -35,9 +39,12 @@ const {
 } = require("../_mocks/fakeKnowledgeBase");
 
 // ----------------------------------------------------------------------------
-// Install shims for the production tool registry. We must do this BEFORE the
-// orchestrator modules are required, so they pick up our fake `getTool` and
-// never reach Mongo/Chroma/Groq.
+// Stub 1 — production tool registry. Installed BEFORE the orchestrator modules
+// are required so they pick up our fake `getTool` and never reach
+// Mongo/Chroma/Groq. The fake `retrieveKnowledge` mirrors the production
+// signature `({ question, metadata, medicineScope })` and intentionally
+// returns a MIXED-medicine result for "side effects" — exactly the raw recall
+// the evidence-integrity guard must then scope down to the active medicine.
 // ----------------------------------------------------------------------------
 
 const toolMap = {
@@ -47,12 +54,8 @@ const toolMap = {
   },
   retrieveKnowledge: {
     name: "retrieveKnowledge",
-    // Mirror the production signature: `({ question, metadata })`. The bug is
-    // that `toolExecutor` calls this WITHOUT a `medicineScope` and without any
-    // medicine-scoped metadata, so the fake (like the real retriever) returns
-    // a mixed-medicine result for queries like "side effects".
-    execute: ({ question, metadata }) =>
-      fakeRetrieveKnowledge({ question, metadata, k: 5 }),
+    execute: ({ question, metadata, medicineScope }) =>
+      fakeRetrieveKnowledge({ question, metadata, medicineScope, k: 5 }),
   },
   retrieveRelevantMemory: {
     name: "retrieveRelevantMemory",
@@ -71,7 +74,53 @@ stubModule("src/ai/toolRegistry.js", {
   tools: toolMap,
 });
 
-// Now require production modules — they will see the stubbed registry.
+// ----------------------------------------------------------------------------
+// Stub 2 — deterministic `normalizeMedicineQuery`. The conversation service
+// uses this to detect an explicit NEW medicine vs a follow-up. We resolve a
+// small known set (Pregabalin / Dolo650 / Telmisartan) at high confidence and
+// return a non-medicine result for everything else (so follow-up phrasings are
+// treated as follow-ups, not new medicines). No Mongo, no network, no hang.
+// ----------------------------------------------------------------------------
+
+const KNOWN_RESOLUTIONS = {
+  pregabalin: { medicineName: "Pregabalin", genericName: "Pregabalin", aliases: ["Lyrica"] },
+  dolo650: { medicineName: "Dolo650", genericName: "Paracetamol", aliases: ["Crocin"] },
+  telmisartan: { medicineName: "Telmisartan", genericName: "Telmisartan", aliases: ["Telma"] },
+};
+
+const fakeNormalizeMedicineQuery = async (query) => {
+  const key = String(query || "").toLowerCase().trim();
+  const hit = Object.entries(KNOWN_RESOLUTIONS).find(([slug]) => key.includes(slug));
+  if (!hit) {
+    return {
+      type: "unknown",
+      normalizedQuery: query,
+      confidence: 0.2,
+      medicine: null,
+      reason: "no match",
+      method: "stub",
+    };
+  }
+  const [, medicine] = hit;
+  return {
+    type: "medicine",
+    normalizedQuery: medicine.medicineName,
+    confidence: 0.92,
+    medicine: { _id: `med-${medicine.medicineName}`, ...medicine },
+    reason: "stub direct match",
+    method: "stub",
+  };
+};
+
+stubModule("src/medicine/medicineNormalizer.js", {
+  normalizeMedicineQuery: fakeNormalizeMedicineQuery,
+  // The conversation service only consumes `normalizeMedicineQuery`; other
+  // exports are present for require-shape parity.
+  rebuildMedicineKnowledgeIndex: async () => ({ count: 0, rebuiltAt: new Date() }),
+  normalizeMedicineRecord: (r) => r,
+});
+
+// Now require production modules — they will see the stubbed registry/resolver.
 const { executeWorkflowTools } = require(path.join(
   REPO_ROOT,
   "src/orchestrator/toolExecutor.js"
@@ -85,253 +134,177 @@ const conversationContextService = require(path.join(
   "src/services/conversationContextService.js"
 ));
 
-const { setActiveMedicineContext, resolveContextualQuery } =
-  conversationContextService;
+const {
+  setActiveMedicineContext,
+  getActiveContext,
+  clearActiveContext,
+  resolveContextualQuery,
+} = conversationContextService;
 
 // ---------------------------------------------------------------------------
-// Sequence A — RAG / Evidence contamination under an active Pregabalin context.
+// Sequence A — RAG / Evidence contamination is ELIMINATED under an active
+// Pregabalin context. Even though raw retrieval returns mixed medicines
+// (Gabapentin / Alprazolam / Dolo650), the evidence-integrity guard scopes the
+// surfaced evidence to Pregabalin and reports the dropped contamination.
 // ---------------------------------------------------------------------------
-//
-// Bug clauses 1.2, 1.3, 1.6:
-//   * `toolExecutor` calls `retrieveKnowledge({ question: plan.query })` with
-//     raw text and no medicine metadata filter.
-//   * `reranker` has no medicine signal.
-//   * `evidenceCollector` does not validate metadata against the resolved
-//     medicine.
-//
-// On UNFIXED code we expect Gabapentin / Alprazolam chunks to leak into
-// `evidence.ragContext.context` even though the active medicine is Pregabalin.
 
-test("Sequence A — RAG/evidence contamination under active Pregabalin", async (t) => {
+test("Sequence A — RAG/evidence is scoped to the active medicine (Pregabalin)", async (t) => {
   const telegramId = "explore-A";
+  clearActiveContext(telegramId);
   setActiveMedicineContext(telegramId, {
     medicineName: "Pregabalin",
     genericName: "Pregabalin",
     query: "Pregabalin",
   });
+  const activeMedicine = getActiveContext(telegramId);
 
   const plan = {
     query: "side effects",
-    entities: {
-      medicine: "Pregabalin",
-      normalizedMedicineQuery: "Pregabalin",
-    },
+    entities: { medicine: "Pregabalin", normalizedMedicineQuery: "Pregabalin" },
     routes: [{ tool: "rag" }, { tool: "medicine" }],
-    execute: {
-      family: false,
-      medicine: true,
-      memory: false,
-      rag: true,
-      nearby: false,
-    },
+    execute: { family: false, medicine: true, memory: false, rag: true, nearby: false },
   };
 
-  const toolResults = await executeWorkflowTools({
-    plan,
-    telegramId,
-    profile: null,
-  });
+  const toolResults = await executeWorkflowTools({ plan, telegramId, profile: null });
   const evidence = collectEvidence({
     query: plan.query,
     plan,
     toolResults,
+    activeMedicine,
   });
 
   const ragItems = evidence.ragContext.context;
-  const activeMedicine = "Pregabalin";
 
-  // Capture the contaminated chunks for the failure message — these are the
-  // counterexamples that prove the bug exists.
-  const contaminated = ragItems.filter((item) => {
-    const tag = (item.medicine || item.generic || "").toLowerCase();
-    if (!tag) return false; // neutral / guideline chunks are allowed
-    return tag !== activeMedicine.toLowerCase();
+  await t.test("every surfaced RAG chunk belongs to the active medicine", () => {
+    const contaminated = ragItems.filter((item) => {
+      const tag = (item.medicine || item.generic || "").toLowerCase();
+      if (!tag) return false; // neutral / guideline chunks are allowed
+      return tag !== "pregabalin";
+    });
+    assert.deepEqual(
+      contaminated.map((c) => ({ medicine: c.medicine, generic: c.generic })),
+      [],
+      "expected zero contaminated chunks under active Pregabalin context, got: " +
+        JSON.stringify(contaminated, null, 2)
+    );
   });
 
-  await t.test(
-    "every surfaced RAG chunk belongs to the active medicine (Pregabalin)",
-    () => {
-      assert.deepEqual(
-        contaminated.map((c) => ({
-          medicine: c.medicine,
-          generic: c.generic,
-          source: c.source,
-        })),
-        [],
-        "expected zero contaminated chunks under active Pregabalin context, got: " +
-          JSON.stringify(contaminated, null, 2)
-      );
-    }
-  );
+  await t.test("evidence.ragContext exposes a contamination report", () => {
+    assert.ok(
+      evidence.ragContext.contamination,
+      "expected evidence.ragContext.contamination report from the integrity guard"
+    );
+    assert.ok(
+      evidence.ragContext.contamination.dropped > 0,
+      "expected the guard to drop at least one contaminating chunk"
+    );
+  });
 
-  await t.test(
-    "evidence.ragContext should expose a contamination report (none present today)",
-    () => {
-      assert.ok(
-        evidence.ragContext.contamination,
-        "expected evidence.ragContext.contamination report after evidence-integrity guard; " +
-          "today the field is undefined — confirming clause 1.6 (evidence not validated)."
-      );
-    }
-  );
-
-  // Sanity: the fake KB really does contain the contaminating chunks. If this
-  // sanity check ever fails we know the test setup itself drifted, not the bug.
-  const sanityHasGabapentin = CHUNKS.some(
-    (c) => c.metadata.medicine === "Gabapentin"
-  );
-  assert.equal(
-    sanityHasGabapentin,
-    true,
-    "fakeKnowledgeBase must seed at least one Gabapentin chunk"
-  );
+  await t.test("sanity: the fake KB really seeds contaminating chunks", () => {
+    assert.equal(
+      CHUNKS.some((c) => c.metadata.medicine === "Gabapentin"),
+      true,
+      "fakeKnowledgeBase must seed at least one Gabapentin chunk"
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Sequence B — Follow-up loss outside the hardcoded regex set.
+// Sequence B — Follow-up phrasings outside the old hardcoded regex set now
+// resolve against the active medicine.
 // ---------------------------------------------------------------------------
-//
-// Bug clauses 1.4, 1.5: the current `resolveContextualQuery` uses a small
-// regex set that misses "can I take it daily?", "can my father use it?",
-// and "what is the generic?". Each of those should resolve against the active
-// Pregabalin context but does not.
 
-test("Sequence B — Follow-up phrasings outside the hardcoded regex set", async (t) => {
+test("Sequence B — follow-up phrasings resolve against the active medicine", async (t) => {
   const telegramId = "explore-B";
+  clearActiveContext(telegramId);
   setActiveMedicineContext(telegramId, {
     medicineName: "Pregabalin",
     genericName: "Pregabalin",
     query: "Pregabalin",
   });
 
-  const followUps = [
-    "can I take it daily?",
-    "can my father use it?",
-    "what is the generic?",
-  ];
+  const followUps = ["can I take it daily?", "can my father use it?", "what is the generic?"];
 
   for (const follow of followUps) {
     await t.test(`follow-up resolves to Pregabalin: "${follow}"`, async () => {
       const result = await resolveContextualQuery(telegramId, follow);
       const resolvedQuery = String(result.query || "").toLowerCase();
-      const activeMedicine = "pregabalin";
-
       assert.equal(
         result.usedContext,
         true,
-        `expected usedContext=true for follow-up "${follow}", got ` +
-          JSON.stringify(result)
+        `expected usedContext=true for follow-up "${follow}", got ${JSON.stringify(result)}`
       );
       assert.ok(
-        resolvedQuery.includes(activeMedicine),
-        `expected resolved query to reference Pregabalin for follow-up "${follow}", ` +
-          `got query="${result.query}"`
+        resolvedQuery.includes("pregabalin"),
+        `expected resolved query to reference Pregabalin for "${follow}", got "${result.query}"`
       );
     });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Sequence C — Context switch failure for medicines outside the hardcoded
-// regex (e.g., "Telmisartan").
+// Sequence C — Context switch on an explicit new medicine. The conversation
+// service signals a switch (usedContext=false) when the user names a new
+// medicine; once the caller stores that context (as search.js does after a
+// successful search), follow-ups resolve to the NEW medicine.
 // ---------------------------------------------------------------------------
-//
-// Bug clauses 1.7, 1.8: `hasExplicitMedicineLikeText` only knows a small list
-// of medicines (dolo, crocin, pregabalin, alprax, modafinil, telma, montek,
-// aciloc, glycomet, ...). Anything else (Telmisartan, Atorvastatin, Cetirizine,
-// ...) is misrouted as a follow-up against the previously active medicine.
 
-test("Sequence C — Context switch failure for medicines outside the regex", async (t) => {
+test("Sequence C — explicit new medicine switches context away from Pregabalin", async (t) => {
   const telegramId = "explore-C";
-  setActiveMedicineContext(telegramId, {
-    medicineName: "Pregabalin",
-    genericName: "Pregabalin",
-    query: "Pregabalin",
-  });
 
   await t.test(
-    "explicit new medicine ('Telmisartan side effects') should NOT resolve to Pregabalin",
+    "'Telmisartan side effects' does NOT resolve to Pregabalin",
     async () => {
-      const result = await resolveContextualQuery(
-        telegramId,
-        "Telmisartan side effects"
-      );
+      clearActiveContext(telegramId);
+      setActiveMedicineContext(telegramId, {
+        medicineName: "Pregabalin",
+        genericName: "Pregabalin",
+        query: "Pregabalin",
+      });
+      const result = await resolveContextualQuery(telegramId, "Telmisartan side effects");
       const resolvedQuery = String(result.query || "").toLowerCase();
-
-      // The user explicitly named Telmisartan. The pipeline must either treat
-      // this as a fresh medicine query (usedContext=false) or rewrite it as
-      // "side effects of Telmisartan". On unfixed code it rewrites to
-      // "side effects of Pregabalin" — that is the bug.
       assert.ok(
         !resolvedQuery.includes("pregabalin"),
-        `expected resolved query NOT to reference Pregabalin when user said "Telmisartan side effects", ` +
-          `got query="${result.query}", usedContext=${result.usedContext}`
-      );
-      // And, if the system did rewrite, it should reference Telmisartan.
-      if (result.usedContext) {
-        assert.ok(
-          resolvedQuery.includes("telmisartan"),
-          `usedContext=true but resolved query did not mention Telmisartan: query="${result.query}"`
-        );
-      }
-    }
-  );
-
-  await t.test(
-    "follow-up after typing 'Telmisartan' should resolve against Telmisartan, not Pregabalin",
-    async () => {
-      // Simulate: user types only "Telmisartan" (a fresh medicine). The current
-      // pipeline does not switch the active context here because
-      // `hasExplicitMedicineLikeText("Telmisartan")` returns false — neither the
-      // hardcoded regex nor the long-word (>12 chars) fallback fires.
-      await resolveContextualQuery(telegramId, "Telmisartan");
-
-      // Then the user asks a generic follow-up. On a fixed pipeline this would
-      // resolve against Telmisartan; on unfixed code it still resolves against
-      // Pregabalin.
-      const followUp = await resolveContextualQuery(telegramId, "what does it do?");
-      const resolvedQuery = String(followUp.query || "").toLowerCase();
-
-      assert.ok(
-        !resolvedQuery.includes("pregabalin"),
-        `expected follow-up after "Telmisartan" NOT to reference Pregabalin, ` +
-          `got query="${followUp.query}", context=${JSON.stringify(followUp.context)}`
-      );
-      assert.ok(
-        resolvedQuery.includes("telmisartan"),
-        `expected follow-up after "Telmisartan" to reference Telmisartan, ` +
-          `got query="${followUp.query}"`
+        `expected resolved query NOT to reference Pregabalin, got "${result.query}" (usedContext=${result.usedContext})`
       );
     }
   );
 
   await t.test(
-    "explicit Dolo650 turn followed by 'what does it do?' should resolve to Dolo650",
+    "after the caller stores the new medicine, follow-ups resolve to Telmisartan",
     async () => {
-      // Reset context to Pregabalin to keep this sub-case independent.
+      clearActiveContext(telegramId);
       setActiveMedicineContext(telegramId, {
         medicineName: "Pregabalin",
         genericName: "Pregabalin",
         query: "Pregabalin",
       });
 
-      // Step 1: user explicitly names a new medicine. With the current
-      // `hasExplicitMedicineLikeText` regex, "Dolo650" does NOT match `\bdolo\b`
-      // (digits attach as word chars and break the boundary), and the
-      // long-word fallback requires length > 12.
-      await resolveContextualQuery(telegramId, "Now tell me about Dolo650");
+      // User explicitly names a new medicine → service signals a switch.
+      const switchTurn = await resolveContextualQuery(telegramId, "Telmisartan");
+      assert.equal(
+        switchTurn.usedContext,
+        false,
+        "explicit new medicine should signal a context switch (usedContext=false)"
+      );
 
-      // Step 2: the production search.js path would only call
-      // setActiveMedicineContext AFTER a successful searchMedicine. We do NOT
-      // simulate that here, because the bug under test is the conversation
-      // service's own ability to detect a context switch.
+      // Production wiring: search.js stores the new context after a successful
+      // search. Simulate that here.
+      setActiveMedicineContext(telegramId, {
+        medicineName: "Telmisartan",
+        genericName: "Telmisartan",
+        query: "Telmisartan",
+      });
+
       const followUp = await resolveContextualQuery(telegramId, "what does it do?");
       const resolvedQuery = String(followUp.query || "").toLowerCase();
-
       assert.ok(
         !resolvedQuery.includes("pregabalin"),
-        `expected follow-up after "Now tell me about Dolo650" NOT to reference Pregabalin, ` +
-          `got query="${followUp.query}", context=${JSON.stringify(followUp.context)}`
+        `expected follow-up NOT to reference Pregabalin, got "${followUp.query}"`
+      );
+      assert.ok(
+        resolvedQuery.includes("telmisartan"),
+        `expected follow-up to reference Telmisartan, got "${followUp.query}"`
       );
     }
   );

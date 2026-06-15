@@ -71,13 +71,13 @@ test("formatNearbyRecommendations — renders phone, distance, open status, sour
   });
 
   await t.test("contains medicine line when query supplied", () => {
-    assert.match(html, /Medicine: <b>Paracetamol<\/b>/);
+    assert.match(html, /<b>Paracetamol<\/b>/);
   });
 
   await t.test("contains distance and open status", () => {
-    assert.match(html, /Distance: <b>0\.8 km<\/b>/);
-    assert.match(html, /Open status: <b>Open now<\/b>/);
-    assert.match(html, /Distance: <b>1\.4 km<\/b>/);
+    assert.match(html, /0\.8 km/);
+    assert.match(html, /🟢 Open/);
+    assert.match(html, /1\.4 km/);
   });
 
   await t.test("phone surfaces only when present", () => {
@@ -87,13 +87,14 @@ test("formatNearbyRecommendations — renders phone, distance, open status, sour
     assert.doesNotMatch(medPlusBlock, /📞/);
   });
 
-  await t.test("source label and OSM hydration marker are present", () => {
-    assert.match(html, /Source: <b>OpenStreetMap<\/b>/);
-    assert.match(html, /refreshed from OpenStreetMap/);
+  await t.test("live OSM hydration marker is present", () => {
+    // Compact card surfaces hydration as a "· live" badge rather than a
+    // verbose "refreshed from OpenStreetMap" line or internal source labels.
+    assert.match(html, /· live/);
   });
 
   await t.test("radius is shown", () => {
-    assert.match(html, /Search radius: <b>5 km<\/b>/);
+    assert.match(html, /within 5km/);
   });
 
   await t.test("output is deterministic", () => {
@@ -108,7 +109,7 @@ test("formatNearbyRecommendations — empty ranked list shows fallback message",
     { radiusKm: 5, ranked: [], medicine: { genericName: "Paracetamol" } },
     "Paracetamol"
   );
-  assert.match(html, /No nearby pharmacy matches yet/);
+  assert.match(html, /No pharmacies nearby yet/);
   assert.match(html, /within <b>5 km<\/b>/);
 });
 

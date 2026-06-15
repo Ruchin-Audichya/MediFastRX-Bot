@@ -1,48 +1,228 @@
-# MediFast AI
+<div align="center">
 
-Finding the right medicine in India is harder than it should be. You walk into a pharmacy with a parchi, the chemist shrugs, you call the next shop, then the next, and you still aren't sure if what you're buying is the right brand or the right salt. Most of us end up Googling on the way and trusting whichever blog ranks first that day.
+# 🩺 MediFast CareOps
+### An AI Healthcare Operations Agent — *Uber + Zomato for medicines, powered by ServiceNow*
 
-MediFast AI is a Telegram bot that turns that messy hunt into a quick conversation. You type a medicine, a symptom, or even a typo in Hinglish, and the bot pulls together what it knows from a verified Indian medicine catalog, a small RAG library of trusted notes, and a careful AI layer on top. Then it shows you nearby pharmacies, the kind where you can tap to call or open Google Maps. It tries to feel less like a search engine and more like asking a friend who happens to be a chemist.
+A patient sends one message. An autonomous agent understands it, finds the medicine,
+locates real pharmacies, and opens a **tracked ServiceNow operation** — Case, Incident,
+Task, Workflow — that it drives to resolution. Not a chatbot. An operations agent.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-LLM%20Provider-F55036)
-![Chroma](https://img.shields.io/badge/Chroma-Vector%20DB-5B5BD6)
-![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![ServiceNow](https://img.shields.io/badge/ServiceNow-Live%20Table%20API-62D84E)
+![Groq](https://img.shields.io/badge/Groq-LLM-F55036)
+![Telegram](https://img.shields.io/badge/Telegram-Live-26A5E4?logo=telegram&logoColor=white)
+![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-396%20passing-22c55e)
 
-> A small but important note: MediFast helps you understand and discover medicines. It is not a doctor and never tries to act like one.
+</div>
 
-## What it can actually do for you
+> ⚕️ **Safety first.** MediFast helps people discover and obtain medicines. It is **not a doctor**
+> and never invents dosage, frequency, prescriptions, or stock. Every AI answer is double-sanitized.
 
-You can type a brand like `Dolo 650`, a generic like `Paracetamol`, a salt like `Pantoprazole`, a typo like `Prrgabakin`, or a Hinglish phrase like `bukhar ki tablet` or `gas ki dawa`. The bot will figure out which medicine you mean, give you a short conversational answer about what it is for, the common side effects to watch for, and a few alternatives. If your message is a follow-up like _"can my father take it"_ or _"what does it do"_, it remembers what you were just talking about and answers in context.
+---
 
-If you share your location once, the bot turns into something closer to Zomato for medicines. It pulls live pharmacies near you from OpenStreetMap, lays them out by distance, shows whether they are open, and gives you tap-to-call and tap-to-navigate buttons. No fake numbers, no random listings.
+## 🎯 The 30-second pitch
 
-The bot also has a soft fallback that came in this last release. When you ask about a medicine that is not yet in our verified catalog, it does not give up. It quietly asks the AI for a brief, sanitized summary, marks it clearly as compiled from general knowledge, and tells you to confirm with a pharmacist before using it. That answer is also logged in the background so an admin can promote good ones into the verified catalog over time. The bot literally gets smarter as people use it.
+> *"Finding a parent's medicine in India is a phone-tree scramble across chemists.
+> MediFast turns one message into a tracked healthcare operation — it understands the
+> medicine, finds real pharmacies near you, and if it's unavailable it opens a ServiceNow
+> incident, finds alternatives, and escalates — all on a live operations dashboard with
+> SLA and MTTR. It's not a chatbot; it owns the problem to resolution."*
 
-## How it stays safe
+---
 
-This part matters, especially for medicine. The AI never invents dosages, frequencies, durations, prescription advice, or stock claims. There is a system prompt that forbids it, and there is a second sanitizer in code that strips any `500 mg twice daily` or `take for 5 days` line if a model ever slips. The verified catalog stays the source of truth. The AI is allowed to write the friendly explanation around it, not the medical facts inside it.
+## ⭐ The story (STAR)
 
-## Getting it running on your machine
+### **S — Situation**
+1.4 billion people. Millions of daily medicine searches. Yet finding the *right* medicine —
+correct brand, correct salt, actually in stock, nearby — is still a manual, anxious scramble.
+You hold a handwritten *parchi*, the chemist shrugs, you call the next shop, then the next.
+When it's a parent's chronic medicine that has run out, that scramble becomes an emergency.
 
-You need Node.js 18 or newer, a local MongoDB, a Telegram bot token from BotFather, and a Groq API key. With those four things, the rest is three commands.
+### **T — Task**
+Build something that doesn't just *answer* a medicine question, but **takes operational
+ownership** of getting the patient their medicine — the way an enterprise service desk owns
+an incident from report to resolution. And prove it maps cleanly onto ServiceNow.
+
+### **A — Action**
+We built **MediFast CareOps**: a conversational agent on Telegram + WhatsApp that, on every
+request, autonomously:
+1. **Understands** — brand, generic, salt, Hinglish, or typo (`Dolo 650`, `bukhar ki tablet`, `prrgabakin`).
+2. **Retrieves** — verified medicine catalog + contamination-safe RAG + **live Apollo Pharmacy** brand/price/stock.
+3. **Discovers** — real nearby pharmacies (OpenStreetMap live) with chain badges, open status, call & navigate.
+4. **Operates** — opens a **ServiceNow Case**, runs a **Workflow**, creates **Tasks**, raises **Incidents**, and **escalates** when a medicine is unavailable.
+5. **Tracks** — every action on a live **operations dashboard** with SLA compliance, MTTR, and an autonomous agent-action audit trail.
+
+### **R — Result**
+- A medicine request becomes an **owned, tracked, resolved operation** with measurable SLA / MTTR.
+- **Real ServiceNow incidents** post to a live instance (`dev401401.service-now.com`) through the Table API.
+- **Real India pharmacy data** (Apollo: *Dolo-650 ₹32, in-stock; Viagra 50mg ₹492*).
+- **396 automated tests passing**, including two fixed P0 reliability bugs (RAG contamination, context drift).
+- Runs **fully offline** in mock mode — the demo never depends on conference Wi-Fi.
+
+---
+
+## ❌ Why existing solutions fail
+
+| Approach | What it does | Why it falls short |
+|---|---|---|
+| **Search apps** | Return a list and stop | No location truth, no follow-through, no ownership |
+| **Chatbots** | Answer one question | Lose context — "can my father take it?" becomes a new search |
+| **E-pharmacies** | Sell their own SKUs | Don't coordinate your neighbourhood chemist or escalate shortages |
+| **Generic LLMs** | Chat fluently | Hallucinate dosages — unacceptable for medicine |
+
+There's plenty of *information retrieval*. There's no *operational ownership*. That's our wedge.
+
+---
+
+## 💡 What makes this different from a chatbot
+
+A chatbot **talks**. MediFast CareOps **operates**:
+
+- It creates **Cases, Tasks, Incidents, and Workflows** — first-class records, not chat logs.
+- It enforces **SLAs**, computes **MTTR**, and **escalates** breaches autonomously.
+- It writes an **Agent Action audit trail** — every decision with a stated reason.
+- It **never drifts medicines** — ask "side effects?" and it stays locked to the active medicine (a fixed P0 bug most assistants still have).
+
+---
+
+## 🏗 Architecture
+
+```
+        ┌──────────────────────────────┐
+        │   Telegram  /  WhatsApp        │   ← conversational channels
+        └───────────────┬──────────────┘
+                        ▼
+        ┌──────────────────────────────┐
+        │      MediFast AI Agent         │   entity + intent + context retention
+        └───────────────┬──────────────┘
+                        ▼
+  ┌───────────────────────────────────────────────┐
+  │  Medicine Intelligence · RAG · Family Memory     │
+  │  Pharmacy Discovery (OSM) · Apollo Live Catalog  │
+  └───────────────┬─────────────────────────────────┘
+                        ▼
+        ┌──────────────────────────────┐
+        │        CareOps Layer           │   Cases · Tasks · Incidents
+        │   (event-driven, autonomous)   │   Workflows · Agent Actions · SLA
+        └───────────────┬──────────────┘
+                        ▼
+        ┌──────────────────────────────┐
+        │   ServiceNow Table API         │   real Incidents/Cases/Tasks
+        │   (live mode · mock fallback)  │
+        └───────────────┬──────────────┘
+                        ▼
+        ┌──────────────────────────────┐
+        │   Operations Dashboard         │   SLA · MTTR · resolution · reasoning
+        └──────────────────────────────┘
+```
+
+**Deterministic-first principle:** the verified medicine catalog is the source of truth.
+The LLM only writes the friendly explanation *around* verified facts, and is double-sanitized.
+
+---
+
+## 🧠 The six AI layers
+
+| Layer | Role | Key modules |
+|---|---|---|
+| **1. Conversation AI** | Follow-ups, context retention, zero medicine drift | `conversationContextService`, `context/medicineContext` |
+| **2. Medical understanding** | Entity + intent + Hinglish/typo normalization | `entityExtractor`, `intentEngine`, `medicineNormalizer` |
+| **3. Medicine intelligence** | Catalog + RAG + relationships + **live Apollo** | `searchService`, `ragService`, `integrations/parse/apolloMedicineClient` |
+| **4. Pharmacy discovery** | OSM live pharmacies, chain recognition, best-option ranking | `pharmacyRecommendationService`, `pharmacyRankingService` |
+| **5. ServiceNow workflow AI** | Cases/Tasks/Incidents/Workflows + escalation + SLA | `careops/*`, `integrations/servicenow/*` |
+| **6. Personalized recommendation** | Family memory, refill workflows, reorder | `familyService`, `memoryService`, `careops/workflowEngine` |
+
+---
+
+## 🟢 ServiceNow integration — *the heart of the submission*
+
+MediFast doesn't *mention* ServiceNow — it **runs on ServiceNow's operational model**.
+
+### The mapping (healthcare → ServiceNow)
+
+| Healthcare event | ServiceNow concept | What happens |
+|---|---|---|
+| Medicine search | **Knowledge retrieval** | Verified catalog + RAG grounding |
+| Medicine request | **Service Request → Workflow** | Medication Continuity workflow opens |
+| Medicine **unavailable** | **Incident** | Priority + SLA clock + escalation |
+| Family healthcare need | **Case** | Per-family-member case management |
+| Follow-up question | **Agent Task** | Task on the active case |
+| Refill reminder | **Workflow** | Scheduled refill automation |
+| Medication continuity | **End-to-end Workflow** | request → intelligence → pharmacy → task → resolution |
+| Agent decision | **Agent Action** | Audit trail entry *with stated reasoning* |
+
+### How it actually works (live, not cosmetic)
+
+- The `ServiceNowClient` posts to the **ServiceNow Table API**:
+  `POST https://dev401401.service-now.com/api/now/table/{incident | sn_customerservice_case | task}`
+- **Adapters** map CareOps records to ServiceNow fields (priority `1–4`, impact/urgency, `correlation_id`, `correlation_display = "MediFast CareOps"`).
+- **Two modes, env-flagged:**
+  - **Live** (`SERVICENOW_ENABLED=true` + instance creds) → real incidents land on the PDI. *Verified: `INC0010001`, `INC0010002` created.*
+  - **Mock** (default) → realistic synthetic refs, so the demo runs with zero credentials.
+- **`GET /api/careops/servicenow-preview`** returns the *exact* Table API payload that would POST — proving the integration is real even in mock mode.
+- **Graceful degradation:** if ServiceNow is down, the local operation still completes and the bot keeps working. Secrets are **never logged**.
+
+### What to show judges in ServiceNow
+1. The bot raises an **Incident** in chat → refresh the ServiceNow **Incident list** → it's there, live.
+2. The **Case** umbrella linking the Incident + Tasks for a family member.
+3. The **SLA / priority** fields populated by our adapters.
+4. The **payload-preview endpoint** — the literal REST call.
+
+> **Why ServiceNow is critical here:** healthcare fulfillment *is* an operations problem —
+> intake, prioritization, SLAs, escalation, resolution. ServiceNow is the world's operations
+> platform. MediFast is the patient-facing agent that *feeds* and *drives* it.
+
+---
+
+## 🔍 How RAG works (and why it's safe)
+
+1. Verified medicine records + curated notes are **chunked** (`identity`, `safety`, `relationships`) and embedded locally with `Xenova/all-MiniLM-L6-v2` (384-dim, in-process, no API).
+2. Vectors persist in a local store (`data/chroma/`).
+3. At query time: **hybrid retrieval** = vector (cosine) + keyword (Fuse.js), **scoped to the active medicine**, reranked with a medicine-identity signal.
+4. An **evidence-integrity guard** drops any chunk that doesn't belong to the active medicine — so **Pregabalin never pulls Gabapentin evidence** (a real contamination bug we fixed).
+5. Groq synthesizes a grounded answer from **validated evidence only**, sanitized to strip any dosage/stock/prescription claim.
+
+RAG here isn't decoration — it's the **contamination-safe grounding layer** that lets follow-ups work without drifting medicines.
+
+---
+
+## 🎬 Demo flow (3 minutes)
 
 ```bash
-git clone https://github.com/Ruchin-Audichya/MediFastRX-Bot.git
+npm install
+npm run seed && npm run import-medicines   # pharmacies + medicine catalog
+npm run demo:careops                        # pre-seed a believable operations board
+npm start                                   # bot + server + dashboard
+```
+
+Open the dashboard at **`http://localhost:3001/careops`** on a second screen.
+
+| Beat | In chat | On the dashboard / ServiceNow |
+|---|---|---|
+| 1 | `Dolo 650` | Continuity Workflow + Case appear; agent actions stream live |
+| 2 | `side effects?` | Stays locked to Dolo 650 (no drift); a Task is created |
+| 3 | `Papa ke liye Pregabalin` *(unavailable)* | **Family Case + Incident + escalation** — refresh ServiceNow, the incident is there |
+| 4 | tap **📍 Nearby** → share location | Real pharmacies, chain badges, **Start Fulfillment** |
+| 5 | `/careops` | Live **SLA / MTTR / resolution** KPIs in chat |
+
+Full script: [`docs/WINNING_DEMO_SCRIPT.md`](docs/WINNING_DEMO_SCRIPT.md)
+
+---
+
+## ⚙️ Setup
+
+**Prerequisites:** Node.js 18+, MongoDB, a Telegram bot token (BotFather), a Groq API key.
+
+```bash
+git clone <your-repo-url>
 cd MediFastRX-Bot
 npm install
+cp .env.example .env          # Windows: Copy-Item .env.example .env
 ```
 
-Copy the example environment file and fill in the four values that matter — your Telegram token, your Mongo URI, your Groq key, and the model name. Everything else has sensible defaults.
-
-```bash
-cp .env.example .env
-# on Windows PowerShell, use:  Copy-Item .env.example .env
-```
-
-Open `.env` and set at least these:
-
+Minimum `.env`:
 ```env
 TELEGRAM_BOT_TOKEN=your_botfather_token
 MONGODB_URI=mongodb://localhost:27017/medifast
@@ -52,126 +232,54 @@ ENABLE_LLM_SYNTHESIS=true
 LLM_PROVIDER=groq
 ```
 
-Make sure MongoDB is running locally (`mongod`, or your service manager). Then start the bot:
+Optional power-ups (all OFF by default, safe to leave blank):
+```env
+# Live ServiceNow (real incidents)
+SERVICENOW_ENABLED=true
+SERVICENOW_INSTANCE=dev401401
+SERVICENOW_USER=admin
+SERVICENOW_PASSWORD=********
+
+# Live Apollo Pharmacy catalog (real prices/stock)
+APOLLO_ENABLED=true
+PARSE_API_KEY=pmx_********
+```
 
 ```bash
-npm start
+npm start          # start the bot, API server, and dashboard
+npm test           # 396 tests
 ```
 
-You should see three lines in the console — Mongo connecting, the Express server coming up on port 3001, and the bot saying it is in polling mode. Open Telegram, search for your bot's username, send `/start`, and you are in.
+---
 
-If you want to develop on it with auto-reload, use `npm run dev` instead.
+## 🧪 Quality & reliability
 
-## Try it like a user would
+- **396 automated tests** (`node --test`) covering the agent, CareOps, RAG, pharmacy, ServiceNow, WhatsApp, and the two P0 fixes.
+- **Two P0 bugs fixed & regression-locked:** RAG cross-medicine contamination, and follow-up context drift.
+- **Safety floor:** system prompt + code sanitizer strip any dosage/stock/prescription claim.
+- **Graceful degradation everywhere:** ServiceNow, Apollo, WhatsApp, and Groq all fall back cleanly.
 
-Once the bot is running, this is the easiest tour:
+---
 
-```
-You: Pregabalin
-Bot: 💊 Pregabalin
-     A short conversational answer with what it is used for and one safety note,
-     followed by primary use, side effects and alternatives, and a row of buttons.
+## 🛣 Future vision
 
-You: side effects
-Bot: continues from Pregabalin without you having to repeat the name.
+- Bi-directional ServiceNow sync (status updates flow back to the patient).
+- Apollo / 1mg / PharmEasy partner APIs for real-time inventory (adapter layer ready).
+- Photo-of-prescription intake (OCR scaffold present, flagged off).
+- Population-scale proactive refill automation and guardian alerts.
 
-You: can my father take it
-Bot: same context, scoped to that medicine.
+---
 
-You: bukhar ki tablet
-Bot: switches to a symptom-style suggestion path.
+## 🏆 Why we can win
 
-You: Dolo 650 near me
-Bot: asks for your location once. Tap "Share Location" and it returns a clean list
-     of nearby pharmacies with distance, open status, and call/navigate buttons.
-```
+- **It's operations, not a chatbot** — Cases, Incidents, Tasks, Workflows, SLAs, MTTR, escalation, autonomous audit trail.
+- **The ServiceNow integration is real and provable** — live Table API incidents + a payload-preview endpoint.
+- **Real India data** — verified catalog + live Apollo prices + OpenStreetMap pharmacies.
+- **It runs offline** — mock modes mean the demo never fails on Wi-Fi.
+- **It's real software** — 396 passing tests, fixed P0 reliability bugs, clean architecture.
 
-If you type a brand it does not know yet, it will quietly fetch a short AI-written summary, mark it as general-knowledge, and remember it for follow-ups. That is the new fallback in action.
+<div align="center">
 
-## What is in the box
+*Built for ServiceNow HackOn. Healthcare, owned end to end.*
 
-```
-src/
-  ai/                deterministic entity extraction, routing, safety guard
-  bot/               Telegram handlers and commands
-  cache/             per-user response cache + medicine cache
-  context/           the canonical MedicineContext that flows end-to-end
-  diagnostics/       production health and runtime tracing
-  events/            event bus and analytics listeners
-  integrations/      MediAtlas client (off by default until keys are configured)
-  medicine/          catalog, importer, normalizer, graph, LLM augment service
-  memory/            semantic memory and summarization
-  models/            MongoDB schemas
-  orchestrator/      planner, tool executor, evidence collector, integrity guard
-  pharmacy/          nearby search, ranking, OSM hydration
-  providers/         Groq, local Llama, deterministic fallback
-  rag/               loaders, chunking, embeddings, retrieval, reranker
-  services/          search, conversation context, RAG service, intent engine
-  utils/             formatters and helpers
-
-knowledge-base/      curated RAG documents (medicines, side effects, symptoms)
-data/medicine-sources Indian medicine catalog drops
-scripts/             import, diagnostics, runtime trace, health checks
-tests/               exploration, preservation, unit, integration, property-based
-docs/                architecture and integration notes
-```
-
-## Useful commands
-
-Day to day, you will mostly need three:
-
-```bash
-npm start                  # run the bot
-npm run dev                # run with auto-reload during development
-npm test                   # run the full test suite (270+ tests)
-```
-
-When something feels off, the diagnostics scripts are the fastest way to understand why:
-
-```bash
-npm run diagnose-medicines     # is the catalog loaded and resolving correctly?
-npm run diagnose-rag           # is the vector store happy?
-npm run diagnose-llm           # is Groq reachable, what is the latency?
-npm run diagnose-pharmacies    # do nearby queries return real results?
-npm run diagnose-memory        # is family memory persisting?
-npm run production-health      # one-shot health rollup
-npm run runtime -- "Dolo near me"   # trace a single message through every layer
-```
-
-For data setup:
-
-```bash
-npm run import-medicines       # import the medicine catalog from data/medicine-sources
-npm run import-pharmacies      # import seed pharmacies (OSM hydration runs live too)
-npm run ingest                 # re-ingest the RAG knowledge base
-npm run activate-data          # activate the catalog for the in-memory matcher
-```
-
-## How a message flows
-
-When you send a message, the bot quietly walks through these stages.
-
-1. The text is normalized and an intent is extracted. The bot decides if you said a medicine, a symptom, mentioned a family member, or asked something else.
-2. The router decides which tools to call — medicine knowledge, RAG, semantic memory, nearby pharmacies, family profile.
-3. Independent tools run in parallel. There is a small per-user cache so repeated lookups about the same medicine reuse the previous results within a short window.
-4. An evidence collector packs everything into a single shape. An integrity guard then validates that every chunk actually belongs to the medicine you asked about, so RAG cannot leak Gabapentin into a Pregabalin answer.
-5. Groq writes a short, friendly narrative on top of that evidence, scoped only to the active medicine. If Groq fails, times out, or is disabled, the bot falls back to a deterministic card that still carries every layer through.
-6. The formatter renders a clean Telegram card and sends it. While the heavy work is happening, you see a quick "Looking up X…" message that gets edited in place when the real card arrives. That is what makes it feel near-instant.
-
-## What changed in the last release
-
-The bot used to feel like a templated search engine that occasionally lost track of what you were just talking about. After a few days of testing it, three things were broken — the bot mixed up medicines mid-conversation, it gave up on anything not in the catalog, and the message style felt robotic and slow.
-
-This release rebuilt the core. There is now a single canonical `MedicineContext` that flows through every layer end-to-end, so follow-ups stay on the right medicine. RAG retrieval is medicine-aware and an integrity guard drops chunks that do not belong. The card got cleaner — no more confidence percentages or aliases blockquotes — and the AI line goes on top so it reads like a friend explaining, not a database dump. Replies feel much faster because of two-stage send and a per-user cache. And when you ask about a brand the catalog does not know yet, the bot fills in a sanitized AI summary, marks it honestly, and logs it for admin promotion later. The safety floor — never invent dosage, prescription advice, or stock — is enforced both in the system prompt and in a code-level sanitizer.
-
-## Roadmap
-
-- Pharmacy live stock checks via partner integrations or MediAtlas going GA.
-- WhatsApp adapter that mirrors the Telegram experience.
-- Voice notes — "Dolo near me" spoken into Telegram.
-- A small admin dashboard for catalog health, top searches, and promoting AI-augmented answers into the verified catalog.
-- Open-source LLM deployment path so private inference becomes cheap.
-
-## Built by
-
-Ruchin Audichya, as an India-first healthcare assistant MVP.
+</div>

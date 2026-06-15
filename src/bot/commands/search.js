@@ -12,11 +12,15 @@ const { getSessionLocation, shareLocationKeyboard } = require("../../pharmacy/ph
 const { handleNearbyMedicineSearch } = require("./nearby");
 const { runMediFastWorkflow } = require("../../orchestrator/orchestrator");
 const { resolveContextualQuery, setActiveMedicineContext, getActiveContext } = require("../../services/conversationContextService");
-const { augmentUnknownMedicine, looksLikeMedicineQuery } = require("../../medicine/llmAugmentService");
+const { augmentUnknownMedicine, suggestMedicinesForNeed, looksLikeMedicineQuery, looksLikeMedicineNeed } = require("../../medicine/llmAugmentService");
+const apolloMedicineClient = require("../../integrations/parse/apolloMedicineClient");
 const eventBus = require("../../events/eventBus");
 const {
   formatSearchResults,
   formatMedicineCard,
+  formatApolloResults,
+  formatConversationalMedicine,
+  buildQuickActionKeyboard,
   formatNotFound,
   formatReorderPrompt,
   formatSearchFollowUp,
@@ -25,6 +29,11 @@ const {
   escapeHtml,
 } = require("../../utils/formatter");
 const logger = require("../../utils/logger");
+
+// Conversational mode (UX redesign): short, WhatsApp-like medicine replies with
+// quick-action buttons instead of the verbose card. Default ON; set
+// CONVERSATIONAL_MODE=false to fall back to the legacy medicine card.
+const CONVERSATIONAL_MODE = () => process.env.CONVERSATIONAL_MODE !== "false";
 
 // ---------------------------------------------------------------------------
 // Phase 6 / Task 8.3 — two-stage send scaffold + typing indicator on slow LLM paths.
@@ -212,6 +221,11 @@ const handleSearch = async (ctx, query, contextOptions = {}) => {
         query: effectiveQuery,
         normalizedQuery,
         intentKey: intent.key,
+        // CareOps: carry family context so an unavailable family-member medicine
+        // drives the combined Family Medication Shortage journey.
+        familyMemberName: mentionedMember?.name || familyTarget?.name || null,
+        relation: mentionedMember?.relation || familyTarget?.relation || entities.person || null,
+        suggestions,
       });
 
       // ---- LLM augment fallback for unknown medicines -----------------------
@@ -222,7 +236,48 @@ const handleSearch = async (ctx, query, contextOptions = {}) => {
       // footnote, and is logged to UnmatchedMedicineEnrichment so the catalog
       // can be promoted by an admin later (continuous-improvement loop).
       const augmentTarget = entities.medicine || normalizedIntentQuery || normalizedQuery || effectiveQuery;
-      if (looksLikeMedicineQuery(augmentTarget)) {
+      if (looksLikeMedicineQuery(augmentTarget) && !looksLikeMedicineNeed(effectiveQuery)) {
+        // ---- Apollo Pharmacy live enrichment (real India catalog) ----------
+        // When enabled, try the real Apollo brand/price/stock data first. This
+        // is the "feels like it knows every medicine" moment. Best-effort:
+        // any failure falls through to the Groq general-knowledge augment.
+        if (apolloMedicineClient.isEnabled()) {
+          try {
+            const apollo = await apolloMedicineClient.search(augmentTarget);
+            if (apollo.ok && apollo.results.length) {
+              const apolloText = formatApolloResults(augmentTarget, apollo.results);
+              const apolloMarkup = {
+                inline_keyboard: [
+                  [
+                    { text: "📍 Nearby Pharmacy", callback_data: "nearby:open" },
+                    { text: "⚠️ Side Effects", callback_data: `details:side:${augmentTarget.substring(0, 45)}` },
+                  ],
+                  [{ text: "🔄 Search Again", callback_data: "prompt_search" }],
+                ],
+              };
+              await ctx.reply(apolloText, { parse_mode: "HTML", reply_markup: apolloMarkup });
+              // Real-brand match → set active context so follow-ups work, and
+              // emit search.completed so CareOps opens a continuity workflow.
+              const top = apollo.results[0];
+              setActiveMedicineContext(ctx.from.id, {
+                medicineName: top.medicineName,
+                genericName: top.tags?.[0] || top.medicineName,
+                query: augmentTarget,
+                confidence: 0.8,
+              });
+              eventBus.emitSafe("search.completed", {
+                telegramId: ctx.from.id,
+                normalizedQuery: augmentTarget,
+                intentKey: intent.key,
+                topMedicineName: top.medicineName,
+              });
+              return;
+            }
+          } catch (err) {
+            logger.warn(`Apollo enrichment skipped: ${err.message}`);
+          }
+        }
+
         let augmentPlaceholder = null;
         if (TWO_STAGE_SEND_ENABLED()) {
           try {
@@ -291,6 +346,40 @@ const handleSearch = async (ctx, query, contextOptions = {}) => {
             /* ignore */
           }
         }
+      }
+
+      // ---- Need-based suggestion fallback --------------------------------
+      // The query was not a known medicine and not a medicine-like name (e.g.
+      // "sex medicine", "medicine for acidity", "nind ki dawa"). Ask Groq for
+      // REAL medicine names for that need so the user is never stuck. Each
+      // suggestion is a tap-to-search button; we also try to enrich the top
+      // one with live Apollo data inline.
+      const needSuggest = await suggestMedicinesForNeed({
+        telegramId: ctx.from.id,
+        query: effectiveQuery,
+      });
+      if (needSuggest.ok && needSuggest.suggestions.length) {
+        const names = needSuggest.suggestions;
+        const lines = [];
+        lines.push(`💡 <b>For "${escapeHtml(effectiveQuery)}", these are commonly used:</b>`);
+        lines.push("");
+        names.forEach((n) => lines.push(`• <b>${escapeHtml(n)}</b>`));
+        lines.push("");
+        lines.push("<i>Compiled from general medical knowledge — tap one to see details and nearby availability. Confirm with a pharmacist before use.</i>");
+
+        // Tap-to-search buttons (use the first word so the resolver gets a
+        // clean token, e.g. "Sildenafil (Viagra)" → "Sildenafil").
+        const cleanFirst = (s) => s.replace(/\(.*?\)/g, "").trim().split(/\s+/)[0] || s;
+        const rows = names.slice(0, 4).map((n) => [
+          { text: `🔍 ${n.slice(0, 40)}`, callback_data: `search_intent:${cleanFirst(n).substring(0, 48)}` },
+        ]);
+        rows.push([{ text: "📍 Nearby Pharmacy", callback_data: "nearby:open" }]);
+
+        await ctx.reply(lines.join("\n"), {
+          parse_mode: "HTML",
+          reply_markup: { inline_keyboard: rows },
+        });
+        return;
       }
 
       if (sos) {
@@ -459,6 +548,37 @@ const handleSearch = async (ctx, query, contextOptions = {}) => {
       activeCtx.activeStatus === "active" &&
       typeof activeCtx.confidence === "number" &&
       activeCtx.confidence >= cardThreshold;
+
+    // ---- Conversational mode (UX redesign) --------------------------------
+    // Short, WhatsApp-like reply + quick-action buttons. Replaces the verbose
+    // card on the default medicine path. Technical detail only surfaces when
+    // the user taps Side effects / Alternatives. Safety preserved: the AI
+    // sentence is already sanitized; no dosage/stock is shown.
+    if (CONVERSATIONAL_MODE() && shouldUseMedicineCard) {
+      const convoName = activeCtx.medicineName || normalizedQuery || topMedicineName;
+      const convoText = formatConversationalMedicine(convoName, {
+        evMed: aiContext?.evidence?.medicineContext?.medicine || top || {},
+        aiAnswer: aiContext?.answer || "",
+      });
+      const convoMarkup = buildQuickActionKeyboard(normalizedQuery);
+      if (placeholderMessage) {
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            placeholderMessage.message_id,
+            convoText,
+            { parse_mode: "HTML", reply_markup: convoMarkup }
+          );
+        } catch (err) {
+          logger.warn(`Conversational edit failed, sending fresh: ${err.message}`);
+          await ctx.reply(convoText, { parse_mode: "HTML", reply_markup: convoMarkup });
+        }
+      } else {
+        await ctx.reply(convoText, { parse_mode: "HTML", reply_markup: convoMarkup });
+      }
+      logger.info(`Search (conversational): "${normalizedQuery}" for user ${ctx.from.id}`);
+      return;
+    }
 
     const replyText = shouldUseMedicineCard
       ? formatMedicineCard(activeCtx, {

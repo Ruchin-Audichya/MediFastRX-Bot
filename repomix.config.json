@@ -1,0 +1,35 @@
+{
+  "output": {
+    "filePath": "medifast-careops-repomix.md",
+    "style": "markdown",
+    "compress": false,
+    "removeComments": false,
+    "showLineNumbers": false,
+    "topFilesLength": 20,
+    "directoryStructure": true
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "node_modules/**",
+      "data/chroma/**",
+      "data/test-chroma/**",
+      "logs/**",
+      "*.log",
+      ".env",
+      ".env.*",
+      ".local/**",
+      "assets/**",
+      "**/*.png",
+      "**/*.jpg",
+      "**/*.gif",
+      "medifast-careops-repomix.md",
+      "package-lock.json"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

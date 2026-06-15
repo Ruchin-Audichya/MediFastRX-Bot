@@ -240,10 +240,98 @@ const augmentUnknownMedicine = async ({
   };
 };
 
+// ---------------------------------------------------------------------------
+// Need-based medicine suggestion. When the DB has no match AND the query is a
+// description/need rather than a medicine name (e.g. "sex medicine", "medicine
+// for acidity", "kuch nind ki dawa"), let Groq suggest REAL medicine names so
+// the user is never stuck. The suggestions feed back into the normal search /
+// Apollo flow, so the bot reads as knowledgeable instead of a dead-end.
+// ---------------------------------------------------------------------------
+
+// Detects a "need/description" query: contains medicine/for/cue words or a
+// known need keyword, and is NOT already a clean medicine name. Intentionally
+// broad — the cost of a wrong trigger is just a helpful suggestion.
+const NEED_CUES = /\b(medicine|tablet|dawa|dawai|goli|meds?|pills?|syrup|cream|drops?|for|ke\s*liye|ki\s*dawa|treatment|cure|relief|problem)\b/i;
+const looksLikeMedicineNeed = (query = "") => {
+  const q = String(query || "").trim();
+  if (!q || q.length > 80) return false;
+  // Need cues take priority: "sex medicine", "gas ki dawa", "medicine for X"
+  // all read as a NEED even though the bare-name heuristic might accept them.
+  // Exclude queries that are ONLY a container word (e.g. just "medicine").
+  if (!NEED_CUES.test(q)) return false;
+  const withoutCues = q.replace(NEED_CUES, " ").replace(/\s+/g, " ").trim();
+  if (!withoutCues) return false; // nothing but a cue word
+  return true;
+};
+
+const SUGGEST_SYSTEM_PROMPT = [
+  "You are MediFast AI. The user described a need or condition and we have no catalog match.",
+  "Suggest 2 to 4 REAL, commonly-available medicines (generic or well-known brand names) that are generally used for that need in India.",
+  "Output ONLY a comma-separated list of medicine names. No sentences, no numbering, no extra words.",
+  "Example output: Sildenafil (Viagra), Tadalafil, Dapoxetine",
+  "STRICT: no doses, no frequencies, no prescription instructions, no stock or price.",
+  "If the need is unsafe, illegal, or you are not confident, output exactly: NONE",
+].join(" ");
+
+// Parse a comma/anything list of names from the model output into clean names.
+const parseSuggestionList = (text = "") => {
+  const raw = String(text || "").trim();
+  if (!raw || /^none$/i.test(raw)) return [];
+  return raw
+    .replace(/^[^A-Za-z]*/, "")
+    .split(/[,\n;]+/)
+    .map((s) => s.replace(/^\d+[).]\s*/, "").trim())
+    .map((s) => s.replace(/\s{2,}/g, " "))
+    .filter((s) => s && s.length <= 48 && /[A-Za-z]/.test(s))
+    .slice(0, 4);
+};
+
+const suggestMedicinesForNeed = async ({ telegramId, query } = {}) => {
+  if (!ENABLED()) return { ok: false, suggestions: [], reason: "disabled" };
+  if (!looksLikeMedicineNeed(query)) {
+    return { ok: false, suggestions: [], reason: "not_a_need_query" };
+  }
+
+  const startedAt = Date.now();
+  let result;
+  try {
+    const provider = createProvider();
+    result = await Promise.race([
+      provider.generate({
+        prompt: query,
+        fallback: "",
+        context: [],
+        memory: [],
+        evidence: { medicineContext: { medicine: null }, ragContext: { context: [] }, augmentMode: true },
+        systemPromptOverride: SUGGEST_SYSTEM_PROMPT,
+      }),
+      new Promise((resolve) =>
+        setTimeout(() => resolve({ text: "", ok: false, model: "suggest-timeout" }), TIMEOUT_MS())
+      ),
+    ]);
+  } catch (error) {
+    logger.warn(`suggestMedicinesForNeed error: ${error.message}`);
+    return { ok: false, suggestions: [], reason: "error" };
+  }
+
+  const suggestions = parseSuggestionList(result?.text);
+  const ok = Boolean(result?.ok && suggestions.length);
+  eventBus.emitSafe("llm.suggest.used", {
+    telegramId,
+    query,
+    ok,
+    count: suggestions.length,
+    latencyMs: Date.now() - startedAt,
+  });
+  return { ok, suggestions, provider: result?.provider, model: result?.model };
+};
+
 module.exports = {
   augmentUnknownMedicine,
+  suggestMedicinesForNeed,
   looksLikeMedicineQuery,
+  looksLikeMedicineNeed,
   stripUnsafeLines,
   // exposed for tests
-  __internals: { SYSTEM_PROMPT, TIMEOUT_MS, ENABLED },
+  __internals: { SYSTEM_PROMPT, SUGGEST_SYSTEM_PROMPT, TIMEOUT_MS, ENABLED, parseSuggestionList },
 };

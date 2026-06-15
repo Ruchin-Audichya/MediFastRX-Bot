@@ -1,7 +1,7 @@
 const Pharmacy = require("../models/Pharmacy");
 const PharmacySearchHistory = require("../models/PharmacySearchHistory");
 const eventBus = require("../events/eventBus");
-const { normalizeCoordinates } = require("./pharmacyLocationService");
+const { normalizeCoordinates, getPharmacyCoordinates, haversineDistanceKm } = require("./pharmacyLocationService");
 const { importPharmaciesNearLocation } = require("./sources/sourceManager");
 const logger = require("../utils/logger");
 
@@ -65,13 +65,31 @@ const searchNearbyPharmacies = async ({ latitude, longitude, radiusKm = DEFAULT_
     expandedRadius = true;
   }
 
+  // Distance guard: $nearSphere returns the CLOSEST pharmacies regardless of
+  // how far they are when fewer than the limit exist. If the nearest local
+  // pharmacy is already beyond our radius (e.g. only Jaipur seed data but the
+  // user shared a location in another city), treat it as "no local coverage"
+  // so we hydrate real pharmacies from OSM around the user instead of showing
+  // far, irrelevant stores.
+  const nearestKm = pharmacies.length
+    ? Math.min(
+        ...pharmacies
+          .map((p) => {
+            const c = getPharmacyCoordinates(p);
+            return c ? haversineDistanceKm(location, c) : Infinity;
+          })
+          .filter((d) => Number.isFinite(d))
+      )
+    : Infinity;
+  const noLocalCoverage = !Number.isFinite(nearestKm) || nearestKm > radiusKm;
+
   let osmHydrated = false;
-  // Hydrate from OSM when we have NO local results, or when the local-DB
-  // results are too few even after the expanded radius. This stops the user
-  // from seeing the same 1-2 stale seeded pharmacies in a city we don't have
-  // good coverage for.
+  // Hydrate from OSM when we have NO local results, too few even after the
+  // expanded radius, OR the nearest local pharmacy is beyond our radius (no
+  // real coverage for this location). This stops the user from seeing the same
+  // 1-2 stale seeded pharmacies in a city we don't have good coverage for.
   const needsOsmHydration =
-    LIVE_OSM_LOOKUP() && pharmacies.length < minResults;
+    LIVE_OSM_LOOKUP() && (pharmacies.length < minResults || noLocalCoverage);
   if (needsOsmHydration) {
     try {
       const importRadiusKm = Math.max(radiusKm, Number(process.env.OSM_LIVE_RADIUS_KM || radiusKm));
@@ -90,6 +108,17 @@ const searchNearbyPharmacies = async ({ latitude, longitude, radiusKm = DEFAULT_
       logger.warn(`Live OSM pharmacy lookup skipped: ${error.message}`);
     }
   }
+
+  // Hard radius cap: never surface a pharmacy beyond the (possibly expanded)
+  // radius. Protects against $nearSphere returning far closest-matches when
+  // local coverage is thin. Only applied when we can compute a distance.
+  const maxKm = radiusKm;
+  pharmacies = pharmacies.filter((p) => {
+    const c = getPharmacyCoordinates(p);
+    if (!c) return true; // keep records without coords (rare) rather than drop silently
+    const d = haversineDistanceKm(location, c);
+    return !Number.isFinite(d) || d <= maxKm + 0.05;
+  });
 
   eventBus.emitSafe("pharmacy.location.search.completed", {
     resultCount: pharmacies.length,

@@ -7,6 +7,7 @@
     "start": "node --max-old-space-size=4096 src/index.js",
     "dev": "nodemon --max-old-space-size=4096 src/index.js",
     "seed": "node scripts/seed.js",
+    "demo:careops": "node scripts/seedCareOps.js",
     "ingest": "node scripts/ingestKnowledge.js",
     "import-medicines": "node scripts/importMedicines.js",
     "import-pharmacies": "node scripts/importPharmacies.js",

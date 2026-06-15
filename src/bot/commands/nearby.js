@@ -4,8 +4,10 @@ const { getNearbyPharmacyReadiness } = require("../../services/nearbyPharmacySer
 const { recommendNearbyPharmacies } = require("../../pharmacy/pharmacyRecommendationService");
 const { saveSessionLocation, shareLocationKeyboard } = require("../../pharmacy/pharmacyLocationService");
 const eventBus = require("../../events/eventBus");
-const { escapeHtml } = require("../../utils/formatter");
+const { escapeHtml, formatConversationalNearby, buildNearbyConversationalKeyboard } = require("../../utils/formatter");
 const logger = require("../../utils/logger");
+
+const CONVERSATIONAL_MODE = () => process.env.CONVERSATIONAL_MODE !== "false";
 
 const realPharmacyDataExists = async () =>
   Pharmacy.exists({ isActive: true, source: { $ne: "manual" }, "location.coordinates.0": { $exists: true } });
@@ -179,6 +181,13 @@ const handleNearbyMedicineSearch = async (ctx, { latitude, longitude, medicineQu
     longitude,
     medicineQuery,
   });
+  if (CONVERSATIONAL_MODE()) {
+    await ctx.reply(formatConversationalNearby(recommendation, medicineQuery), {
+      parse_mode: "HTML",
+      reply_markup: buildNearbyConversationalKeyboard(recommendation.ranked, medicineQuery),
+    });
+    return recommendation;
+  }
   await ctx.reply(formatNearbyRecommendations(recommendation, medicineQuery), {
     parse_mode: "HTML",
     reply_markup: buildNearbyActionKeyboard(recommendation.ranked),

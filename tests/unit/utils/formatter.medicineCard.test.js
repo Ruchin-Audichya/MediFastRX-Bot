@@ -169,8 +169,11 @@ test("formatMedicineCard — full data, no enrichment", async (t) => {
     assert.doesNotMatch(html, /<b>Forecast:<\/b>/);
   });
 
-  await t.test("disclaimer always present in footer", () => {
-    assert.match(html, /This bot helps discover medicines and is not a replacement for a doctor\./);
+  await t.test("safety footer always present", () => {
+    // Product decision (commit "Make the bot feel like a real product"):
+    // the verbose disclaimer block was replaced by a single concise reminder
+    // so the card reads like a pharmacist note, not a legal page.
+    assert.match(html, /Always confirm dosage with a pharmacist or doctor\./);
   });
 
   await t.test("output is deterministic", () => {
@@ -268,7 +271,9 @@ test("formatMedicineCard — HTML escapes name, alternatives, pharmacy fields", 
   // & in plain text must become &amp; everywhere we emit user data.
   assert.match(html, /Evil &amp; Co/);
   assert.match(html, /Tylenol &amp; Co/);
-  assert.match(html, /A&amp;B/);
+  // Aliases are intentionally NOT rendered on the compact card (they live in
+  // analytics/evidence, not the user-facing card), so "A&B" must not appear.
+  assert.doesNotMatch(html, /A&amp;B/);
   assert.match(html, /nausea &amp; cramps/);
   assert.match(html, /safety &lt;note&gt; &amp; advice/);
   assert.match(html, /&lt;b&gt;Bad&lt;\/b&gt; Pharmacy/);
@@ -304,10 +309,12 @@ test("formatMedicineCard — sections suppressed when data absent", async (t) =>
     assertSnapshot("formatter.medicineCard.bare", { html });
   });
 
-  await t.test("only header + confidence + disclaimer surface", () => {
+  await t.test("only header + safety footer surface", () => {
     assert.match(html, /💊 <b>Paracetamol<\/b>/);
-    assert.match(html, /Confidence: 65%/);
-    assert.match(html, /This bot helps discover medicines and is not a replacement for a doctor\./);
+    // Confidence pill was intentionally removed from the user-facing card
+    // (it reads as noise on Telegram); it still flows through evidence/analytics.
+    assert.doesNotMatch(html, /Confidence:/);
+    assert.match(html, /Always confirm dosage with a pharmacist or doctor\./);
     assert.doesNotMatch(html, /<b>Used for:<\/b>/);
     assert.doesNotMatch(html, /<b>Common side effects:<\/b>/);
     assert.doesNotMatch(html, /<b>Key safety notes:<\/b>/);
