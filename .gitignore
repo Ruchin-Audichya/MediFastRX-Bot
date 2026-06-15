@@ -36,3 +36,7 @@ Thumbs.db
 
 # Repomix generated pack (regenerate with: npx repomix)
 medifast-careops-repomix.md
+
+# Probe / temp capture output
+probe.txt
+*.probe.txt
