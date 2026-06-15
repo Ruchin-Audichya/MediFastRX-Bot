@@ -8,7 +8,7 @@ const {
   tokenOverlap,
   weightedConfidence,
 } = require("./confidenceScorer");
-const { phoneticKey, editSimilarity, levenshtein } = require("./phonetics");
+const { phoneticKey, editSimilarity, levenshtein, phoneticEditSimilarity } = require("./phonetics");
 
 const SYNONYM_PATH = path.join(__dirname, "..", "..", "..", "data", "medicineSynonyms.json");
 
@@ -269,24 +269,23 @@ const fuzzyMatch = (record, index, { candidateLimit = Number(process.env.MEDICIN
       diceSimilarity(query, item._matcherSearchText) * 0.5
     );
     const edit = bestEditSimilarity(query, item);
-    const qTokens = normalizeIdentity(query).split(" ").filter(Boolean);
-    const distinctQ = Array.from(new Set(qTokens));
-    const shortSingle = distinctQ.length === 1 && distinctQ[0].length <= 6;
-    // Strongest single signal wins — a close typo (edit) or a phonetic/Fuse
-    // hit can each clear the bar on its own. For a SHORT single-token query we
-    // trust ONLY the edit-distance signal; bigram/dice/Fuse substring overlap
-    // alone must not confidently match a short query to a *different* drug
-    // ("DemoXL"→"Demo LC", "Pan D"→"Pan 40"). Those stay as suggestions.
-    const blended = shortSingle
-      ? edit
-      : Math.max(fuseSim, edit, diceSimilarity(query, item._matcherSearchText));
-    // Short single-token query with only a weak edit match → not a confident
-    // match. Skip so it falls through to *suggestions* (handled upstream),
-    // never a wrong confident medicine ("DemoXL" must not resolve to "Demo LC").
-    if (shortSingle && edit < 0.7) continue;
-    const cappedOverlap = shortSingle ? 0 : overlap;
-    const confidence = weightedConfidence({ method: "fuzzy", similarity: blended, overlap: cappedOverlap });
-    if (confidence < 0.5) continue;
+
+    // PRECISION-FIRST GATE (safety): a fuzzy hit only becomes a CONFIDENT
+    // medicine match when the query is genuinely close to a known identity
+    // term — i.e. a real typo. Sharing a prefix or some bigrams is NOT enough
+    // (that's how "asdf123"→"Asodef", "Saridon"→"Sarinor", "Liv 52"→"LIV-CET"
+    // leaked through). When the edit signal is weak the candidate is dropped
+    // here and the query falls through to *suggestions* upstream — the safe,
+    // ChatGPT-like "did you mean…?" behavior instead of a wrong drug.
+    const EDIT_FLOOR = Number(process.env.MEDICINE_FUZZY_EDIT_FLOOR || 0.78);
+    if (edit < EDIT_FLOOR) continue;
+
+    // Confidence is driven primarily by the edit signal (real-typo closeness),
+    // lightly supported by Fuse/overlap. Anchored so a borderline 0.78 edit
+    // lands ~0.62 (accepted but clearly fuzzy) and a 0.9+ edit lands high.
+    const support = Math.max(fuseSim, overlap);
+    const confidence = weightedConfidence({ method: "fuzzy", similarity: edit, overlap: support });
+    if (confidence < 0.55) continue;
     pushMatches({
       output: matches,
       medicines: [item],
@@ -299,11 +298,17 @@ const fuzzyMatch = (record, index, { candidateLimit = Number(process.env.MEDICIN
 };
 
 // Best edit-distance similarity of the query against the record's key identity
-// terms (medicineName/generic/salts/brands/aliases/spellings). Token-aware so a
-// multi-word query compares its strongest token.
+// terms. Compares the WHOLE normalized query (compacted) to each whole term
+// AND token-to-token, so real multi-word names match while mere prefix/bigram
+// overlaps do not inflate the score.
 const bestEditSimilarity = (query, medicine) => {
-  const qTokens = normalizeIdentity(query).split(" ").filter((t) => t.length >= 3);
-  if (!qTokens.length) return 0;
+  const qNorm = normalizeIdentity(query);
+  // Dedupe repeated tokens — rawQueryForRecord repeats the query across
+  // name/generic/brands ("fenytoin fenytoin fenytoin"), which would otherwise
+  // inflate the compacted length and wreck the whole-string comparison.
+  const qTokens = Array.from(new Set(qNorm.split(" ").filter((t) => t.length >= 3)));
+  const qCompact = qTokens.join("");
+  if (!qCompact || qCompact.length < 3) return 0;
   const terms = uniqueTerms([
     medicine.medicineName,
     medicine.genericName,
@@ -313,27 +318,34 @@ const bestEditSimilarity = (query, medicine) => {
     ...(medicine.commonSpellings || []),
   ]);
   let best = 0;
-  for (const qt of qTokens) {
-    for (const term of terms) {
-      const tw = term.split(" ")[0];
-      const sim = editSimilarity(qt, tw);
-      // Length-aware guard: for short tokens (≤6 chars) a single edit is a big
-      // semantic difference (e.g. "Pan 40" vs "Pan D", "DemoXL" vs "Demo LC").
-      // Require the raw edit distance to be ≤1 for short tokens before trusting
-      // a high ratio — otherwise discount it so the result stays a *suggestion*
-      // rather than a confident (and possibly wrong) medicine match.
-      const shorter = Math.min(qt.length, tw.length);
-      let effective = sim;
-      if (shorter <= 6) {
-        const dist = levenshtein(
-          qt.toLowerCase().replace(/[^a-z0-9]/g, ""),
-          tw.toLowerCase().replace(/[^a-z0-9]/g, "")
-        );
-        if (dist > 1) effective = Math.min(sim, 0.3); // weak short typo → suggestion only
+  for (const term of terms) {
+    const tNorm = normalizeIdentity(term);
+    const tCompact = tNorm.replace(/\s+/g, "");
+    if (!tCompact) continue;
+    // Whole-string similarity is the PRIMARY signal: "atorvastain" vs
+    // "atorvastatin" → high; "shelcal500" vs "celsuf500mg500mg" → low;
+    // "liv52" vs "tikliv" → low. Length-compatibility prevents a short query
+    // from matching a long name just because it's a substring.
+    const lenRatio = Math.min(qCompact.length, tCompact.length) / Math.max(qCompact.length, tCompact.length);
+    // Use the stronger of plain and sound-normalized edit similarity so
+    // phonetic typos (ph→f, c/k, doubled letters) score as real typos.
+    const rawWhole = Math.max(
+      editSimilarity(qCompact, tCompact),
+      phoneticEditSimilarity(qCompact, tCompact)
+    );
+    const whole = rawWhole * (0.5 + 0.5 * lenRatio);
+    if (whole > best) best = whole;
+    // Token-to-token ONLY for substantial tokens (≥5 chars) so common short
+    // fragments ("liv", "500", "tab", "gel") can't trigger a false match.
+    for (const qt of qTokens) {
+      if (qt.length < 5) continue;
+      for (const tt of tNorm.split(" ").filter((t) => t.length >= 5)) {
+        const sim = editSimilarity(qt, tt);
+        if (sim > best) best = sim;
+        if (best >= 0.97) return best;
       }
-      if (effective > best) best = effective;
-      if (best >= 0.95) return best;
     }
+    if (best >= 0.97) return best;
   }
   return best;
 };

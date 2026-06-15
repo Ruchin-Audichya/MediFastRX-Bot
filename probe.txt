@@ -1,0 +1,25 @@
+[2026-06-15 16:29:52] [32minfo[39m: MongoDB connected: localhost
+
+LIVE_INVENTORY=false  APOLLO=true
+
+QUERY                      OUTCOME              PATH                               DETAIL
+------------------------------------------------------------------------------------------------------------------------
+Dolo 650                   RESOLVED             catalog(knowledge)                 Dolo 650 [Paracetamol]
+Crocin                     RESOLVED             catalog(knowledge)                 Crocin [Paracetamol]
+Pantoprazole               RESOLVED             catalog(knowledge)                 Pantoprazole [Pantoprazole]
+Shelcal 500                RESOLVED             catalog(knowledge)                 shelcal [Calcium Carbonate]
+Zincovit                   RESOLVED             catalog(knowledge)                 zincovit [Multivitamin]
+Liv 52                     RESOLVED (Apollo)    catalog:MISS ΓåÆ apollo              Himalaya Liv.52, 100 Tablets Γé╣220 in-stock
+Becosules                  RESOLVED             catalog(knowledge)                 Supradyn,Becosules,Zincovit [Multivitamin]
+Thyronorm 50               RESOLVED             catalog(knowledge)                 Thyronorm 50mcg Tablet [Thyroxine]
+Ecosprin 75                RESOLVED             catalog(knowledge)                 Ecosprin 75 Tablet [Aspirin]
+Volini gel                 RESOLVED             catalog(knowledge)                 Diclofenac [Diclofenac]
+Combiflam                  RESOLVED             catalog(knowledge)                 Combiflam [Ibuprofen+Paracetamol]
+[2026-06-15 16:32:50] [33mwarn[39m: Apollo search error: This operation was aborted
+Digene                     NOT FOUND            catalog:MISS ΓåÆ apollo:MISS         (no suggestions)
+Vicks Action 500           RESOLVED             catalog(knowledge)                 Vicks Action 500 Advanced Tablet [Caffeine + Diphenhydramine
+[2026-06-15 16:33:46] [33mwarn[39m: Apollo search error: This operation was aborted
+Saridon                    NOT FOUND            catalog:MISS ΓåÆ apollo:MISS         (no suggestions)
+Disprin                    RESOLVED             catalog(knowledge)                 Ecosprin,Disprin,ASA [Aspirin]
+[2026-06-15 16:35:54] [33mwarn[39m: Apollo search error: This operation was aborted
+Revital H                  NOT FOUND            catalog:MISS ΓåÆ apollo:MISS         Crovital 1500mcg Injection, Evitam Syrup, Creval 10mg Tablet

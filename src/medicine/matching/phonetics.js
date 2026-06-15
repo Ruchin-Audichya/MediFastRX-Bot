@@ -78,4 +78,29 @@ const editSimilarity = (a = "", b = "") => {
   return 1 - d / Math.max(x.length, y.length);
 };
 
-module.exports = { phoneticKey, levenshtein, editSimilarity };
+// Common drug-name sound equalizer — collapses spelling variants that sound
+// the same (ph/f, double letters, c/k, z/s) so edit-distance treats them as
+// near-identical. Reused by both the phonetic key and phonetic edit-similarity.
+const soundNormalize = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "")
+    .replace(/ph/g, "f")
+    .replace(/^kn/g, "n")
+    .replace(/ck/g, "k")
+    .replace(/x/g, "ks")
+    .replace(/z/g, "s")
+    .replace(/(.)\1+/g, "$1"); // collapse doubled letters
+
+// Edit similarity AFTER sound-normalization — "fenytoin" vs "phenytoin" → ~1.0,
+// while genuinely different names stay low.
+const phoneticEditSimilarity = (a = "", b = "") => {
+  const x = soundNormalize(a);
+  const y = soundNormalize(b);
+  if (!x && !y) return 1;
+  if (!x || !y) return 0;
+  const d = levenshtein(x, y);
+  return 1 - d / Math.max(x.length, y.length);
+};
+
+module.exports = { phoneticKey, levenshtein, editSimilarity, soundNormalize, phoneticEditSimilarity };
