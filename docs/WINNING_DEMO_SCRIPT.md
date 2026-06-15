@@ -80,3 +80,32 @@ live mirroring if a PDI is available.
 - `npm run demo:careops` guarantees a populated dashboard even if live network
   is flaky during judging.
 - Groq LLM has a deterministic-card fallback, so answers never hang.
+
+---
+
+## Judge Q&A — answer these honestly and confidently
+
+**"Is the dashboard real data or seeded?"**
+> "The baseline board is seeded so you see a mature operations day — but every
+> number is computed by the *same code* that runs live. Watch: I'll raise a real
+> incident now and the count ticks up." *(Then do the unavailable-medicine flow
+> and refresh ServiceNow — the new INC appears live.)*
+
+**"Is the ServiceNow integration real or mocked?"**
+> "Real. We POST to the ServiceNow Table API on a live instance. Here's the
+> exact call: `GET /api/careops/servicenow-preview`. And here's the incident in
+> the instance." *(Show the incident list on dev401401.)*
+
+**"What happens if your DB / Wi-Fi dies?"**
+> "It degrades gracefully. The catalog has an in-memory fallback, Groq/Apollo/
+> ServiceNow all have timeouts with fallbacks, and the deterministic card always
+> answers. Nothing hard-fails."
+
+## Pre-demo checklist (do 30 min before)
+
+- [ ] Local MongoDB running → `GET /health` shows `db: connected`
+- [ ] Wake the ServiceNow PDI (log in once) so it isn't hibernated
+- [ ] `npm run demo:careops` → board shows ~89% SLA, MTTR ~50 min, 1 escalation
+- [ ] Manual dry-run all 5 beats in Telegram (tests don't cover the live chat path)
+- [ ] Confirm `APOLLO_ENABLED=true` and a `Dolo 650` search returns real prices
+- [ ] Share a **Jaipur** location for the nearby beat (best OSM coverage)

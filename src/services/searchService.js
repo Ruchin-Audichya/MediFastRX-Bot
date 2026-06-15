@@ -166,6 +166,22 @@ const searchKnowledgeFallback = async (query) => {
     };
   } catch (error) {
     logger.warn(`Medicine knowledge fallback failed: ${error.message}`);
+    // Mongo unreachable (or knowledge service threw) — use the in-memory
+    // curated fallback catalog so the bot never hard-fails on a lookup.
+    try {
+      const { findFallbackMedicine, toKnowledgeShape } = require("../medicine/fallbackCatalog");
+      const rec = findFallbackMedicine(query);
+      if (rec) {
+        const shaped = toKnowledgeShape(rec);
+        const mapped = mapKnowledgeResult(shaped, query);
+        if (mapped) {
+          logger.info(`Served "${query}" from in-memory fallback catalog (Mongo unavailable).`);
+          return { results: [mapped], suggestions: [] };
+        }
+      }
+    } catch (fallbackErr) {
+      logger.warn(`In-memory fallback catalog failed: ${fallbackErr.message}`);
+    }
     return { results: [], suggestions: [] };
   }
 };
