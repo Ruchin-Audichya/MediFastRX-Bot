@@ -1,0 +1,242 @@
+[
+  {
+    "id": "dolo650",
+    "name": "Dolo",
+    "generic": "Paracetamol",
+    "strength": "650 mg",
+    "form": "tablet",
+    "aliases": [
+      "Dolo 650"
+    ],
+    "description": "A pain reliever used for pain and high temperature.",
+    "simple": "Paracetamol helps relieve pain and reduce a high temperature.",
+    "sideEffects": [
+      "Side effects are uncommon; allergic reactions can occur."
+    ],
+    "precautions": [
+      "Other products can also contain paracetamol. Ask a pharmacist about duplicate ingredients.",
+      "Liver or kidney problems may affect suitability."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/paracetamol-for-adults/"
+      },
+      {
+        "label": "Micro Labs \u00b7 Dolo brand",
+        "url": "https://www.microlabsltd.com/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "crocin500",
+    "name": "Crocin Advance",
+    "generic": "Paracetamol",
+    "strength": "500 mg",
+    "form": "tablet",
+    "aliases": [
+      "Crocin"
+    ],
+    "description": "A pain reliever used for pain and high temperature.",
+    "simple": "Paracetamol helps relieve pain and reduce a high temperature.",
+    "sideEffects": [
+      "Side effects are uncommon; allergic reactions can occur."
+    ],
+    "precautions": [
+      "Other products can also contain paracetamol. Ask a pharmacist about duplicate ingredients.",
+      "Liver or kidney problems may affect suitability."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/paracetamol-for-adults/"
+      },
+      {
+        "label": "Haleon \u00b7 Crocin Advance 500 mg",
+        "url": "https://www.crocin.com/crocin-products-for-adult/crocin-advance-tablets/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "pcm500",
+    "name": "Paracetamol",
+    "generic": "Paracetamol",
+    "strength": "500 mg",
+    "form": "tablet",
+    "aliases": [
+      "Acetaminophen"
+    ],
+    "description": "A pain reliever used for pain and high temperature.",
+    "simple": "Paracetamol helps relieve pain and reduce a high temperature.",
+    "sideEffects": [
+      "Side effects are uncommon; allergic reactions can occur."
+    ],
+    "precautions": [
+      "Other products can also contain paracetamol. Ask a pharmacist about duplicate ingredients.",
+      "Liver or kidney problems may affect suitability."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/paracetamol-for-adults/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "pcm-liquid",
+    "name": "Paracetamol",
+    "generic": "Paracetamol",
+    "strength": "120 mg/5 ml",
+    "form": "suspension",
+    "aliases": [
+      "Acetaminophen"
+    ],
+    "description": null,
+    "simple": null,
+    "sideEffects": [],
+    "precautions": [],
+    "sources": [
+      {
+        "label": "NHS \u00b7 paracetamol for children (formulation reference)",
+        "url": "https://www.nhs.uk/medicines/paracetamol-for-children/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "cet10",
+    "name": "Cetirizine",
+    "generic": "Cetirizine",
+    "strength": "10 mg",
+    "form": "tablet",
+    "aliases": [],
+    "description": "An antihistamine used to relieve allergy symptoms.",
+    "simple": "Cetirizine blocks histamine, a substance involved in allergy symptoms.",
+    "sideEffects": [
+      "Sleepiness or tiredness",
+      "Headache",
+      "Dry mouth"
+    ],
+    "precautions": [
+      "Sleepiness can affect driving or using machinery.",
+      "Kidney problems and other medicines may affect suitability."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/cetirizine/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "ome20",
+    "name": "Omeprazole",
+    "generic": "Omeprazole",
+    "strength": "20 mg",
+    "form": "capsule",
+    "aliases": [],
+    "description": "A proton pump inhibitor that reduces the amount of acid made in the stomach.",
+    "simple": "Omeprazole reduces stomach acid. It is used for conditions such as heartburn and acid reflux.",
+    "sideEffects": [
+      "Headache",
+      "Stomach pain",
+      "Nausea or vomiting"
+    ],
+    "precautions": [
+      "Other medicines can interact with omeprazole.",
+      "Persistent or worsening symptoms need a professional assessment."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/omeprazole/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "ome-tab",
+    "name": "Omeprazole",
+    "generic": "Omeprazole",
+    "strength": "20 mg",
+    "form": "tablet",
+    "aliases": [],
+    "description": "A proton pump inhibitor that reduces the amount of acid made in the stomach.",
+    "simple": "Omeprazole reduces stomach acid. It is used for conditions such as heartburn and acid reflux.",
+    "sideEffects": [
+      "Headache",
+      "Stomach pain",
+      "Nausea or vomiting"
+    ],
+    "precautions": [
+      "Other medicines can interact with omeprazole.",
+      "Persistent or worsening symptoms need a professional assessment."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/omeprazole/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "amox500",
+    "name": "Amoxicillin",
+    "generic": "Amoxicillin",
+    "strength": "500 mg",
+    "form": "capsule",
+    "aliases": [
+      "Amoxycillin"
+    ],
+    "description": "A penicillin antibiotic used for certain bacterial infections.",
+    "simple": "Amoxicillin is an antibiotic. Antibiotics do not treat viral illnesses such as colds.",
+    "sideEffects": [
+      "Nausea",
+      "Diarrhoea",
+      "Skin rash"
+    ],
+    "precautions": [
+      "A previous penicillin allergy is relevant to suitability."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/amoxicillin/"
+      }
+    ],
+    "reviewedAt": null
+  },
+  {
+    "id": "augmentin625",
+    "name": "Augmentin",
+    "generic": "Amoxicillin + Clavulanic acid",
+    "strength": "500 mg + 125 mg",
+    "form": "tablet",
+    "aliases": [
+      "Augmentin 625",
+      "Co-amoxiclav"
+    ],
+    "description": "A combination antibiotic, also called co-amoxiclav, used for certain bacterial infections.",
+    "simple": "This medicine combines amoxicillin with clavulanic acid. The combination is a different product from amoxicillin alone.",
+    "sideEffects": [
+      "Diarrhoea",
+      "Thrush",
+      "Nausea or vomiting"
+    ],
+    "precautions": [
+      "Penicillin allergy and a history of liver problems are important to discuss with a pharmacist."
+    ],
+    "sources": [
+      {
+        "label": "NHS \u00b7 ingredient information",
+        "url": "https://www.nhs.uk/medicines/co-amoxiclav/"
+      }
+    ],
+    "reviewedAt": null
+  }
+]

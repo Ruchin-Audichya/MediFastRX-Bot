@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-11-03T20:08:42.302Z",
+  "location": "Jaipur city center (test location, not user coordinates)",
+  "durationMs": 2457,
+  "mode": "live",
+  "liveProviderUnavailable": false,
+  "total": 12,
+  "withPublishedPhone": 4,
+  "liveListings": 8,
+  "datedDirectoryListings": 4,
+  "stock": "unknown for all public listings",
+  "sources": [
+    "OpenStreetMap contributors via Photon",
+    "Apollo store directory"
+  ]
+}

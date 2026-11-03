@@ -1,35 +1,21 @@
-# Dependencies
 node_modules/
-
-# Environment and secrets
 .env
-.env.local
-.env.*.local
-.env.bak*
+.env.*
+!.env.example
 .local/
-
-# Editor / IDE workspaces and personal notes
-.kiro/
-docs/project-report/
-
-# Logs and runtime output
+dist/
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Test and build output
-coverage/
-dist/
-tmp/
+*.sqlite*
+*.db*
 .cache/
-
-# Local vector storage
-data/chroma/
-data/chroma/medicine-knowledge-ingestion-progress.json
-data/test-chroma/
-
-# OS/editor files
+coverage/
+test-results/
+playwright-report/
+data/imports/
 .DS_Store
-Thumbs.db
+
+.next/
+.impeccable/review/
+next-env.d.ts
+*.tsbuildinfo

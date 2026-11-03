@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-22",
+  "branch": "feat/medifast-v2",
+  "runtime": "Node v24.22.0",
+  "originalBaseline": { "tests": 353, "passed": 324, "failed": 29, "startup": "MONGODB_URI missing" },
+  "focusedMedicineFixtures": { "beforePassed": 15, "afterPassed": 23, "total": 23, "scope": "shared compact regression set, not general accuracy" },
+  "backend": { "tests": 100, "passed": 100, "failed": 0 },
+  "browser": { "tests": 32, "passed": 32, "failed": 0, "projects": ["desktop", "phone"] },
+  "build": { "cleanInstall": "passed", "typecheck": "passed", "nextBuild": "passed", "auditVulnerabilities": 0 },
+  "productionBrowser": { "passed": true, "realOcr": true, "twoAuthenticatedSessions": true, "sseUpdate": true, "liveDirectory": true, "loadedMapTiles": true, "pageErrors": 0 },
+  "separateApprovalBrowser": { "passed": true, "pendingHidden": true, "operatorNotified": true },
+  "configuration": { "appMode": "demo", "publicPharmacies": "live", "llm": "off", "realPartnerCount": 0 },
+  "remoteCIExecuted": false
+}

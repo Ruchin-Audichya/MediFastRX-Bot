@@ -1,0 +1,208 @@
+{
+  "branch": "main d399ef3",
+  "note": "Direct original matcher; semantic disabled. Multiple candidates treated as ambiguous; single candidate as resolved. Same identities and cases used after.",
+  "passed": 15,
+  "total": 23,
+  "results": [
+    {
+      "query": "Dolo 650",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "dolo650"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Cetirizine",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "cet10"
+      ],
+      "pass": true
+    },
+    {
+      "query": "acetaminophen",
+      "expected": "candidates",
+      "actual": "candidates",
+      "ids": [
+        "dolo650",
+        "crocin500",
+        "pcm500",
+        "pcm-liquid"
+      ],
+      "pass": false
+    },
+    {
+      "query": "paracetmol",
+      "expected": "candidates",
+      "actual": "not_found",
+      "ids": [],
+      "pass": false
+    },
+    {
+      "query": "krocin",
+      "expected": "candidates",
+      "actual": "not_found",
+      "ids": [],
+      "pass": false
+    },
+    {
+      "query": "cetirzine",
+      "expected": "candidates",
+      "actual": "not_found",
+      "ids": [],
+      "pass": false
+    },
+    {
+      "query": "Hydralazine",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "hydralazine"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Hydroxyzine",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "hydroxyzine"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Paracetamol 500 mg tablet",
+      "expected": "candidates",
+      "actual": "confirmed",
+      "ids": [
+        "pcm500"
+      ],
+      "pass": false
+    },
+    {
+      "query": "Paracetamol 120mg/5ml suspension",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "pcm-liquid"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Omeprazole 20 mg capsule",
+      "expected": "confirmed",
+      "actual": "candidates",
+      "ids": [
+        "ome20",
+        "ome-tab"
+      ],
+      "pass": false
+    },
+    {
+      "query": "Omeprazole tablet",
+      "expected": "confirmed",
+      "actual": "candidates",
+      "ids": [
+        "ome20",
+        "ome-tab"
+      ],
+      "pass": false
+    },
+    {
+      "query": "Omeprazole",
+      "expected": "candidates",
+      "actual": "candidates",
+      "ids": [
+        "ome20",
+        "ome-tab"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Dolo 500",
+      "expected": "not_found",
+      "actual": "not_found",
+      "ids": [],
+      "pass": true
+    },
+    {
+      "query": "Dolo syrup",
+      "expected": "not_found",
+      "actual": "confirmed",
+      "ids": [
+        "dolo650"
+      ],
+      "pass": false
+    },
+    {
+      "query": "Augmentin 625",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "augmentin625"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Amoxicillin + Clavulanic acid",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "augmentin625"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Amoxicillin",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "ids": [
+        "amox500"
+      ],
+      "pass": true
+    },
+    {
+      "query": "asdf123",
+      "expected": "not_found",
+      "actual": "not_found",
+      "ids": [],
+      "pass": true
+    },
+    {
+      "query": "zzzqwlmnop",
+      "expected": "not_found",
+      "actual": "not_found",
+      "ids": [],
+      "pass": true
+    },
+    {
+      "query": "Saridon",
+      "expected": "not_found",
+      "actual": "not_found",
+      "ids": [],
+      "pass": true
+    },
+    {
+      "query": "Liv 52",
+      "expected": "not_found",
+      "actual": "not_found",
+      "ids": [],
+      "pass": true
+    },
+    {
+      "query": "Paracetamol",
+      "expected": "candidates",
+      "actual": "candidates",
+      "ids": [
+        "dolo650",
+        "crocin500",
+        "pcm500",
+        "pcm-liquid"
+      ],
+      "pass": true
+    }
+  ]
+}
