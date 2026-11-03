@@ -1,0 +1,10 @@
+[
+  { "id": "vaishali", "name": "Vaishali Nagar", "lat": 26.9116, "lng": 75.7425 },
+  { "id": "cscheme", "name": "C-Scheme", "lat": 26.9067, "lng": 75.8000 },
+  { "id": "malviya", "name": "Malviya Nagar", "lat": 26.8549, "lng": 75.8160 },
+  { "id": "mansarovar", "name": "Mansarovar", "lat": 26.8530, "lng": 75.7660 },
+  { "id": "rajapark", "name": "Raja Park", "lat": 26.8990, "lng": 75.8290 },
+  { "id": "banipark", "name": "Bani Park", "lat": 26.9290, "lng": 75.7940 },
+  { "id": "vidhyadhar", "name": "Vidhyadhar Nagar", "lat": 26.9550, "lng": 75.7780 },
+  { "id": "jagatpura", "name": "Jagatpura", "lat": 26.8230, "lng": 75.8590 }
+]

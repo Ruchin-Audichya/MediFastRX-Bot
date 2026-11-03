@@ -1,0 +1,14 @@
+[
+  { "key": "pinkcity", "name": "Pinkcity Care Chemist", "area": "Vaishali Nagar", "address": "Shop 4, Amrapali Marg (fictional)", "lat": 26.9140, "lng": 75.7445, "studio": true },
+  { "key": "saanjh", "name": "Saanjh Pharmacy", "area": "Vaishali Nagar", "address": "Plot 12, Gandhi Path (fictional)", "lat": 26.9085, "lng": 75.7390, "sim": { "reply": 0.95, "delay": 14, "stock": 0.85 } },
+  { "key": "lotus", "name": "Lotus Medicals", "area": "Vaishali Nagar", "address": "Queens Road corner (fictional)", "lat": 26.9170, "lng": 75.7380, "sim": { "reply": 0.9, "delay": 25, "stock": 0.7 } },
+  { "key": "kesar", "name": "Kesar Health Store", "area": "Sodala", "address": "Ajmer Road service lane (fictional)", "lat": 26.9060, "lng": 75.7520, "sim": { "reply": 0.8, "delay": 40, "stock": 0.6 } },
+  { "key": "nahar", "name": "Nahar Medicos", "area": "Vaishali Nagar", "address": "Nursery Circle (fictional)", "lat": 26.9200, "lng": 75.7480, "sim": { "reply": 0.85, "delay": 20, "stock": 0.75 } },
+  { "key": "gulmohar", "name": "Gulmohar Chemists", "area": "Vaishali Nagar", "address": "Hanuman Nagar (fictional)", "lat": 26.9030, "lng": 75.7440, "sim": { "reply": 0.7, "delay": 55, "stock": 0.55 } },
+  { "key": "neem", "name": "Neem Tree Pharmacy", "area": "C-Scheme", "address": "Prithviraj Road (fictional)", "lat": 26.9040, "lng": 75.7970, "sim": { "reply": 0.9, "delay": 18, "stock": 0.8 } },
+  { "key": "chandpole", "name": "Chandpole Wellness", "area": "C-Scheme", "address": "Sardar Patel Marg (fictional)", "lat": 26.9080, "lng": 75.8020, "sim": { "reply": 0.85, "delay": 30, "stock": 0.7 } },
+  { "key": "sitara", "name": "Sitara Medical Hall", "area": "Malviya Nagar", "address": "Sector 6 market (fictional)", "lat": 26.8560, "lng": 75.8180, "sim": { "reply": 0.9, "delay": 22, "stock": 0.8 } },
+  { "key": "amaltas", "name": "Amaltas Pharmacy", "area": "Malviya Nagar", "address": "Gaurav Tower lane (fictional)", "lat": 26.8520, "lng": 75.8130, "sim": { "reply": 0.8, "delay": 35, "stock": 0.65 } },
+  { "key": "moonga", "name": "Moonga Chemists", "area": "Mansarovar", "address": "Shipra Path (fictional)", "lat": 26.8540, "lng": 75.7640, "sim": { "reply": 0.85, "delay": 28, "stock": 0.75 } },
+  { "key": "indigo", "name": "Indigo Lane Medicos", "area": "Raja Park", "address": "Gurudwara Road (fictional)", "lat": 26.8995, "lng": 75.8300, "sim": { "reply": 0.8, "delay": 26, "stock": 0.7 } }
+]

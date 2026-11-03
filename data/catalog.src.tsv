@@ -1,0 +1,106 @@
+# id	brand	composition	form	rx	category	aliases
+dolo-650	Dolo 650	Paracetamol 650 mg	tablet	0	pain-fever	dolo|dollo|dolo650
+crocin-advance	Crocin Advance	Paracetamol 500 mg	tablet	0	pain-fever	crocin|crosin
+crocin-650	Crocin 650	Paracetamol 650 mg	tablet	0	pain-fever	crosin 650
+calpol-500	Calpol 500	Paracetamol 500 mg	tablet	0	pain-fever	calpol|kalpol
+calpol-250-susp	Calpol 250 Suspension	Paracetamol 250 mg/5 ml	suspension	0	pain-fever	calpol syrup|calpol 250
+gen-paracetamol-500	Paracetamol 500 (generic)	Paracetamol 500 mg	tablet	0	pain-fever	pcm|paracetamol|paracitamol|paracetmol
+gen-paracetamol-650	Paracetamol 650 (generic)	Paracetamol 650 mg	tablet	0	pain-fever	pcm 650
+combiflam	Combiflam	Ibuprofen 400 mg + Paracetamol 325 mg	tablet	1	pain-fever	combiflem|kombiflam
+brufen-400	Brufen 400	Ibuprofen 400 mg	tablet	1	pain-fever	brufen|ibuprofen
+zerodol-p	Zerodol-P	Aceclofenac 100 mg + Paracetamol 325 mg	tablet	1	pain-fever	zerodol p|zerodolp
+zerodol-sp	Zerodol-SP	Aceclofenac 100 mg + Paracetamol 325 mg + Serratiopeptidase 15 mg	tablet	1	pain-fever	zerodol sp
+meftal-spas	Meftal-Spas	Mefenamic acid 250 mg + Dicyclomine 10 mg	tablet	1	pain-fever	meftal spas|meftal
+meftal-500	Meftal 500	Mefenamic acid 500 mg	tablet	1	pain-fever	meftal forte
+volini-gel	Volini Gel	Diclofenac 1.16% w/w	gel	0	pain-fever	volini
+pan-40	Pan 40	Pantoprazole 40 mg	tablet	1	gastro	pan|pantoprazole|pantop
+pan-d	Pan-D	Pantoprazole 40 mg + Domperidone 30 mg	capsule	1	gastro	pan d|pand
+omez-20	Omez 20	Omeprazole 20 mg	capsule	1	gastro	omez|omeprazole
+razo-20	Razo 20	Rabeprazole 20 mg	tablet	1	gastro	razo|rabeprazole
+ondem-4	Ondem 4	Ondansetron 4 mg	tablet	1	gastro	ondem|ondansetron
+emeset-4	Emeset 4	Ondansetron 4 mg	tablet	1	gastro	emeset
+domstal-10	Domstal 10	Domperidone 10 mg	tablet	1	gastro	domstal|domperidone
+electral	Electral ORS	Oral rehydration salts (WHO formula)	sachet	0	gastro	electral|ors|electrol
+eldoper-2	Eldoper 2	Loperamide 2 mg	capsule	1	gastro	eldoper|loperamide
+duphalac	Duphalac	Lactulose 10 g/15 ml	syrup	0	gastro	duphalac|lactulose
+metrogyl-400	Metrogyl 400	Metronidazole 400 mg	tablet	1	gastro	metrogyl|metronidazole
+flagyl-400	Flagyl 400	Metronidazole 400 mg	tablet	1	gastro	flagyl
+azithral-500	Azithral 500	Azithromycin 500 mg	tablet	1	antibiotic	azithral|azitral|azithromycin
+azee-500	Azee 500	Azithromycin 500 mg	tablet	1	antibiotic	azee
+augmentin-625	Augmentin 625 Duo	Amoxicillin 500 mg + Clavulanic acid 125 mg	tablet	1	antibiotic	augmentin|augmentin 625
+moxikind-cv-625	Moxikind-CV 625	Amoxicillin 500 mg + Clavulanic acid 125 mg	tablet	1	antibiotic	moxikind cv|moxikind
+mox-500	Mox 500	Amoxicillin 500 mg	capsule	1	antibiotic	mox|amoxicillin|amoxycillin
+taxim-o-200	Taxim-O 200	Cefixime 200 mg	tablet	1	antibiotic	taxim o|taximo|cefixime
+zifi-200	Zifi 200	Cefixime 200 mg	tablet	1	antibiotic	zifi
+ciplox-500	Ciplox 500	Ciprofloxacin 500 mg	tablet	1	antibiotic	ciplox|ciprofloxacin
+norflox-400	Norflox 400	Norfloxacin 400 mg	tablet	1	antibiotic	norflox|norfloxacin
+levoflox-500	Levoflox 500	Levofloxacin 500 mg	tablet	1	antibiotic	levoflox|levofloxacin
+gen-doxycycline-100	Doxycycline 100 (generic)	Doxycycline 100 mg	capsule	1	antibiotic	doxycycline|doxy
+cetzine-10	Cetzine 10	Cetirizine 10 mg	tablet	0	allergy	cetzine|cetirizine|cetrizine
+okacet-10	Okacet 10	Cetirizine 10 mg	tablet	0	allergy	okacet
+levocet-5	Levocet 5	Levocetirizine 5 mg	tablet	0	allergy	levocet|levocetirizine
+allegra-120	Allegra 120	Fexofenadine 120 mg	tablet	0	allergy	allegra|fexofenadine
+allegra-180	Allegra 180	Fexofenadine 180 mg	tablet	0	allergy	allegra 180
+montair-lc	Montair-LC	Montelukast 10 mg + Levocetirizine 5 mg	tablet	1	allergy	montair lc|montair
+montek-lc	Montek-LC	Montelukast 10 mg + Levocetirizine 5 mg	tablet	1	allergy	montek lc|montek
+avil-25	Avil 25	Pheniramine 25 mg	tablet	1	allergy	avil|pheniramine
+otrivin-adult	Otrivin Adult Nasal Spray	Xylometazoline 0.1% w/v	spray	0	allergy	otrivin|xylometazoline
+ascoril-ls	Ascoril LS Syrup	Ambroxol 30 mg/5 ml + Levosalbutamol 1 mg/5 ml + Guaiphenesin 50 mg/5 ml	syrup	1	respiratory	ascoril|ascoril ls
+asthalin-100	Asthalin Inhaler	Salbutamol 100 mcg	inhaler	1	respiratory	asthalin|salbutamol
+budecort-200	Budecort 200 Inhaler	Budesonide 200 mcg	inhaler	1	respiratory	budecort|budesonide
+foracort-200	Foracort 200 Inhaler	Formoterol 6 mcg + Budesonide 200 mcg	inhaler	1	respiratory	foracort
+seroflo-250	Seroflo 250 Inhaler	Salmeterol 25 mcg + Fluticasone 250 mcg	inhaler	1	respiratory	seroflo
+gen-montelukast-10	Montelukast 10 (generic)	Montelukast 10 mg	tablet	1	respiratory	montelukast
+glycomet-500	Glycomet 500	Metformin 500 mg	tablet	1	diabetes	glycomet|glucomet
+glycomet-sr-500	Glycomet SR 500	Metformin 500 mg SR	tablet	1	diabetes	glycomet sr
+glycomet-gp-1	Glycomet-GP 1	Glimepiride 1 mg + Metformin 500 mg SR	tablet	1	diabetes	glycomet gp|glycomet gp1
+amaryl-1	Amaryl 1	Glimepiride 1 mg	tablet	1	diabetes	amaryl|glimepiride
+amaryl-2	Amaryl 2	Glimepiride 2 mg	tablet	1	diabetes	amaryl 2
+januvia-100	Januvia 100	Sitagliptin 100 mg	tablet	1	diabetes	januvia|sitagliptin
+janumet-50-500	Janumet 50/500	Sitagliptin 50 mg + Metformin 500 mg	tablet	1	diabetes	janumet
+gen-metformin-500	Metformin 500 (generic)	Metformin 500 mg	tablet	1	diabetes	metformin|metphormin
+telma-40	Telma 40	Telmisartan 40 mg	tablet	1	heart-bp	telma|telmisartan
+telma-h	Telma-H	Telmisartan 40 mg + Hydrochlorothiazide 12.5 mg	tablet	1	heart-bp	telma h
+telma-am	Telma-AM	Telmisartan 40 mg + Amlodipine 5 mg	tablet	1	heart-bp	telma am
+amlong-5	Amlong 5	Amlodipine 5 mg	tablet	1	heart-bp	amlong|amlodipine
+losar-50	Losar 50	Losartan 50 mg	tablet	1	heart-bp	losar|losartan
+met-xl-25	Met XL 25	Metoprolol succinate 25 mg XL	tablet	1	heart-bp	met xl|metoprolol
+concor-5	Concor 5	Bisoprolol 5 mg	tablet	1	heart-bp	concor|bisoprolol
+ecosprin-75	Ecosprin 75	Aspirin 75 mg	tablet	1	heart-bp	ecosprin|aspirin
+ecosprin-av-75	Ecosprin-AV 75	Aspirin 75 mg + Atorvastatin 10 mg	capsule	1	heart-bp	ecosprin av
+atorva-10	Atorva 10	Atorvastatin 10 mg	tablet	1	heart-bp	atorva|atorvastatin
+atorva-20	Atorva 20	Atorvastatin 20 mg	tablet	1	heart-bp	atorva 20
+rosuvas-10	Rosuvas 10	Rosuvastatin 10 mg	tablet	1	heart-bp	rosuvas|rosuvastatin
+clopilet-75	Clopilet 75	Clopidogrel 75 mg	tablet	1	heart-bp	clopilet|clopidogrel
+lasix-40	Lasix 40	Furosemide 40 mg	tablet	1	heart-bp	lasix|furosemide|frusemide
+aldactone-25	Aldactone 25	Spironolactone 25 mg	tablet	1	heart-bp	aldactone|spironolactone
+sorbitrate-5	Sorbitrate 5	Isosorbide dinitrate 5 mg	tablet	1	heart-bp	sorbitrate
+gen-amlodipine-5	Amlodipine 5 (generic)	Amlodipine 5 mg	tablet	1	heart-bp	amlodipin
+gen-telmisartan-40	Telmisartan 40 (generic)	Telmisartan 40 mg	tablet	1	heart-bp	telmisartan generic
+gen-atorvastatin-10	Atorvastatin 10 (generic)	Atorvastatin 10 mg	tablet	1	heart-bp	atorvastatin generic
+thyronorm-25	Thyronorm 25	Levothyroxine 25 mcg	tablet	1	thyroid	thyronorm 25
+thyronorm-50	Thyronorm 50	Levothyroxine 50 mcg	tablet	1	thyroid	thyronorm|thyronorm 50|levothyroxine|thyroxine
+thyronorm-75	Thyronorm 75	Levothyroxine 75 mcg	tablet	1	thyroid	thyronorm 75
+thyronorm-100	Thyronorm 100	Levothyroxine 100 mcg	tablet	1	thyroid	thyronorm 100
+eltroxin-50	Eltroxin 50	Levothyroxine 50 mcg	tablet	1	thyroid	eltroxin
+thyrox-50	Thyrox 50	Levothyroxine 50 mcg	tablet	1	thyroid	thyrox
+shelcal-500	Shelcal 500	Calcium 500 mg + Vitamin D3 250 IU	tablet	0	vitamins	shelcal|shellcal
+becosules	Becosules	Vitamin B-complex + Vitamin C	capsule	0	vitamins	becosules|becosule
+limcee-500	Limcee	Vitamin C 500 mg	tablet	0	vitamins	limcee|vitamin c
+uprise-d3-60k	Uprise-D3 60K	Cholecalciferol 60000 IU	capsule	0	vitamins	uprise d3|uprise|vitamin d3
+neurobion-forte	Neurobion Forte	Vitamin B-complex	tablet	0	vitamins	neurobion
+zincovit	Zincovit	Multivitamin + Zinc	tablet	0	vitamins	zincovit
+folvite-5	Folvite 5	Folic acid 5 mg	tablet	0	vitamins	folvite|folic acid
+pregalin-75	Pregalin 75	Pregabalin 75 mg	capsule	1	neuro	pregalin|pregabalin
+nexito-10	Nexito 10	Escitalopram 10 mg	tablet	1	neuro	nexito|escitalopram
+gen-alprazolam-025	Alprazolam 0.25 (generic)	Alprazolam 0.25 mg	tablet	2	neuro	alprazolam|alprax
+betadine-ointment	Betadine Ointment	Povidone-iodine 5% w/w	ointment	0	skin	betadine|povidone iodine
+soframycin	Soframycin Cream	Framycetin 1% w/w	cream	0	skin	soframycin|framycetin
+candid-cream	Candid Cream	Clotrimazole 1% w/w	cream	0	skin	candid|clotrimazole
+silverex	Silverex Cream	Silver sulfadiazine 1% w/w	cream	1	skin	silverex|silver sulfadiazine
+t-bact	T-Bact Ointment	Mupirocin 2% w/w	ointment	1	skin	t bact|tbact|mupirocin
+permite-5	Permite Cream	Permethrin 5% w/w	cream	1	skin	permite|permethrin
+moxicip-eye	Moxicip Eye Drops	Moxifloxacin 0.5% w/v	drops	1	eye-ear	moxicip|moxifloxacin
+refresh-tears	Refresh Tears	Carboxymethylcellulose 0.5% w/v	drops	0	eye-ear	refresh tears|carboxymethylcellulose
+ciplox-eye	Ciplox Eye Drops	Ciprofloxacin 0.3% w/v	drops	1	eye-ear	ciplox eye|ciplox drops
+primolut-n	Primolut-N	Norethisterone 5 mg	tablet	1	womens	primolut|norethisterone
