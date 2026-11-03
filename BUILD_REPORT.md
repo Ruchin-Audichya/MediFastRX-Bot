@@ -110,3 +110,8 @@ Obtain licensed pharmacy participation, genuine license/identity checks, reviewe
 - Local presentation artifacts under `major-project-presentation/` are preserved outside the release snapshot. No secrets, private database, uploads, caches or node_modules are included.
 
 Setup and a complete Telegram walkthrough: [docs/TELEGRAM.md](docs/TELEGRAM.md). Run `npm run bot:demo` immediately, or configure the private token and run `npm run dev:all`.
+
+
+### Clean-checkout CI correction
+
+The first published run passed dependency installation, all backend tests and the bot smoke, then exposed missing CSS type declarations during `tsc` on a fresh checkout. The prepared local checkout already had Next-generated declarations. `npm run typecheck` now runs `next typegen && tsc --noEmit`, as documented by the installed Next CLI. The failure was reproduced with generated files removed, then the corrected command passed without a build. Generated declarations remain ignored. Feature branch publication is confirmed; main and all historical branches remain unchanged.

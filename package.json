@@ -20,7 +20,7 @@
     "check": "npm test && npm run build",
     "catalog:import": "node scripts/import-catalog.cjs",
     "measure": "node scripts/measure.cjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "demo:reset": "node scripts/seed-platform.cjs --reset",
     "seed": "node scripts/seed-platform.cjs"
   },
