@@ -50,6 +50,7 @@ test("customer builds a list, asks nearby, sees live answers, reserves; pharmaci
   assert.ok(t.chat(C).replyKeyboard?.flat().some((b) => b.request_location), "offers location sharing");
   await t.press("customer", /^Vaishali Nagar$/);
   assert.match(t.last(C).text, /Ready to ask[\s\S]*Vaishali Nagar/);
+  assert.equal(t.chat(C).replyKeyboard, null, "picking an area dismisses the location keyboard");
   await t.press("customer", /Send to \d+ pharmacies/);
 
   const ask = t.app.mf.history.asksOf(t.app.mf.users.byRef(PERSONAS.customer.ref)!.id)[0];

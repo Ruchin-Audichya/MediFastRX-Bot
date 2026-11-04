@@ -197,8 +197,11 @@ export function createBot(deps: BotDeps) {
       const a = deps.areas.find((x) => x.id === m[1]);
       if (!a) return;
       mf.users.setLocation(ctx.user.id, { lat: a.lat, lng: a.lng, place: a.name });
-      if (!mf.drafts.get(ctx.user.id).length) return edit(ctx, { text: `📍 Area set to <b>${a.name}</b>. Now tell me which medicines you need.` });
-      await edit(ctx, confirmView(mf.users.get(ctx.user.id)!));
+      await edit(ctx, { text: `📍 Area: <b>${a.name}</b>` });
+      // A message is the only way to dismiss the "Share location" reply keyboard.
+      if (!mf.drafts.get(ctx.user.id).length) return ctx.reply("Got it. Now tell me which medicines you need.", removeKeyboard);
+      await ctx.reply(`Looking around ${a.name}.`, removeKeyboard);
+      await reply(ctx, confirmView(mf.users.get(ctx.user.id)!));
     }],
     [/^rad:(\d)$/, async (ctx, m) => { mf.users.setRadius(ctx.user.id, Number(m[1])); await edit(ctx, confirmView(mf.users.get(ctx.user.id)!)); }],
     [/^send$/, async (ctx) => {

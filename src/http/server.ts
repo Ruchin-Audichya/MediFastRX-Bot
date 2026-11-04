@@ -49,7 +49,8 @@ export function createServer(app: App) {
 
   // ── Identity: Telegram Mini App initData, or a demo persona in demo mode.
   api.use((req: Req, _res, next) => {
-    const auth = String(req.headers.authorization ?? "");
+    // EventSource can't set headers, so /events may carry the same credential as ?auth=.
+    const auth = String(req.headers.authorization ?? (req.path === "/events" ? req.query.auth ?? "" : ""));
     if (auth.startsWith("tma ") && config.telegram.token) {
       const tg = verifyInitData(auth.slice(4), config.telegram.token);
       if (tg) req.user = mf.users.upsert({ ref: `live:${tg.id}`, transport: "live", chatId: String(tg.id), name: [tg.first_name, tg.last_name].filter(Boolean).join(" "), username: tg.username });
