@@ -139,3 +139,21 @@ test("Telegram users can type a pincode instead of sharing their location", asyn
   assert.match(msgs.at(-1)!.text, /Ready to ask[\s\S]*Vaishali Nagar \(302021\)/);
   app.stop();
 });
+
+test("real-user inputs: spaced pincodes work, and a pincode typed before tapping Add points back to the card", async () => {
+  const { app } = boot();
+  const spaced = await app.finder({ q: "Dolo 650", pin: "302 021" });
+  assert.equal(spaced.stage, "results");
+  assert.equal((await app.finder({ q: "Dolo 650", pin: "302-021" })).stage, "results");
+  const s = app.studio!;
+  const C = PERSONAS.customer;
+  await s.input.text(C, "dolo 650 x2, pan 40");
+  await s.input.text(C, "302 021");
+  const msgs = s.fake.snapshot(C.id).messages;
+  assert.match(msgs.at(-2)!.text, /Looking around <b>Vaishali Nagar<\/b>, 302021/);
+  assert.match(msgs.at(-1)!.text, /tap <b>✚ Add<\/b> on the medicines card above/);
+  await s.input.text(C, "what is pan d");
+  const where = s.fake.snapshot(C.id).messages.at(-1)!.inline!.flat().find((b) => /Where to get/.test(b.text));
+  assert.match(where!.url!, /\/find\?id=pan-d$/, "medicine info links to the full where-to-get-it page");
+  app.stop();
+});

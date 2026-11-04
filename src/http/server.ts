@@ -84,7 +84,7 @@ export function createServer(app: App) {
     }
     next();
   });
-  const need = (req: Req) => req.user ?? fail(401, "auth", "Open this page from Telegram.");
+  const need = (req: Req) => req.user ?? fail(401, "auth", "This page belongs to a different session. Open it from Telegram, or from the browser where you made the request.");
   const fail = (status: number, code: string, message: string): never => { throw Object.assign(new DomainError(code, message), { status }); };
   const wrap = (fn: (req: Req, res: Response) => unknown) => (req: Req, res: Response, next: NextFunction) => {
     try {

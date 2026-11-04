@@ -8,7 +8,7 @@ export function SiteNav({ bot, current }: { bot?: string | null; current?: "home
       <div className="wrap">
         <Logo />
         <div className="nav-links">
-          <a href="/find" aria-current={current === "find" ? "page" : undefined}>Find a medicine</a>
+          <a className="nav-keep" href="/find" aria-current={current === "find" ? "page" : undefined}>Find a medicine</a>
           <a href="/#how">How it works</a>
           <a href="/medicines" aria-current={current === "medicines" ? "page" : undefined}>Medicines</a>
           <a href="/#pharmacies">For pharmacies</a>

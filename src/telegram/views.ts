@@ -6,7 +6,12 @@ import type { Area } from "../domain/seed.ts";
 import type { KnowledgeBase } from "../kb/kb.ts";
 
 export type View = { text: string; keyboard?: InlineKeyboard };
-export type Links = { board: (askId: string) => { url: string; webApp: boolean } | null; desk: () => { url: string; webApp: boolean } | null };
+export type Links = {
+  board: (askId: string) => { url: string; webApp: boolean } | null;
+  desk: () => { url: string; webApp: boolean } | null;
+  /** The website's "where can I get it" page (nearby, map, online). Null when there is no public site. */
+  find?: (q: { id?: string; q?: string }) => string | null;
+};
 
 export const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const time = (ms: number) => new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
@@ -188,7 +193,7 @@ export function boardView(b: Board, links: Links, now: number): View {
     !answered.some((r) => r.answers![i] === "have" || r.answers![i] === "tomorrow"));
   if (missing.length) {
     kb.row();
-    missing.slice(0, 2).forEach((it) => kb.url(`🛵 Find ${it.brand} online`, onlineLink(it.brand)));
+    missing.slice(0, 2).forEach((it) => whereButton(kb, links, it.brand, { id: it.productId, q: it.brand }));
   }
   return { text: lines.join("\n"), keyboard: kb };
 }
@@ -335,8 +340,13 @@ export function pendingPharmacyCard(ph: Pharmacy): View {
 // ───────────── Knowledge base answers (no LLM: structured data only) ─────────────
 
 const onlineLink = (q: string) => `https://blinkit.com/s/?q=${encodeURIComponent(q)}`;
+/** Prefer the full options page (nearby + map + every online platform); fall back to Blinkit search. */
+const whereButton = (kbd: InlineKeyboard, links: Links | undefined, label: string, q: { id?: string; q: string }) => {
+  const site = links?.find?.(q.id ? { id: q.id } : { q: q.q });
+  return site ? kbd.url(`📍 Where to get ${label}`, site) : kbd.url(`🛵 Find ${label} online`, onlineLink(q.q));
+};
 
-export function kbAnswer(kb: KnowledgeBase, catalog: { resolve: (q: string) => any }, intent: "about" | "brands" | "generic" | "strengths", subject: string, product?: Product): View {
+export function kbAnswer(kb: KnowledgeBase, catalog: { resolve: (q: string) => any }, intent: "about" | "brands" | "generic" | "strengths", subject: string, product?: Product, links?: Links): View {
   const r = product ? null : catalog.resolve(subject);
   const focus: Product | null = product ?? (r?.kind === "exact" ? r.product : null);
   const salts = focus ? focus.ingredients.map((i) => i.name) : kb.salts(subject);
@@ -384,6 +394,6 @@ export function kbAnswer(kb: KnowledgeBase, catalog: { resolve: (q: string) => a
 
   if (focus && focus.schedule !== "restricted") kbd.text(`✚ Add ${focus.brand} to list`, `add:${focus.id}:1`).row();
   products.filter((p) => p.schedule !== "restricted").slice(0, 4).forEach((p) => kbd.text(`✚ ${label(p)}`, `add:${p.id}:1`).row());
-  if (!restricted) kbd.url("🛵 Search online (Blinkit)", onlineLink(focus ? focus.brand : salts[0]));
+  if (!restricted) whereButton(kbd, links, focus ? focus.brand : salts[0], focus ? { id: focus.id, q: focus.brand } : { q: salts[0] });
   return { text: lines.join("\n"), keyboard: kbd.inline_keyboard.flat().length ? kbd : undefined };
 }

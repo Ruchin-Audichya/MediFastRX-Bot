@@ -82,6 +82,9 @@ export async function api<T = any>(path: string, body?: unknown, init: RequestIn
 /** Loads the Telegram Mini App SDK only on Mini App routes. Resolves even outside Telegram. */
 export function loadTelegramSdk(): Promise<void> {
   if (window.Telegram?.WebApp) return Promise.resolve();
+  // Website visitors and Studio personas aren't inside Telegram: don't make them wait for its SDK.
+  // Telegram always launches Mini Apps with tgWebApp… parameters in the URL hash.
+  if (!location.hash.includes("tgWebApp") && (persona() || webToken())) return Promise.resolve();
   return new Promise((resolve) => {
     const s = document.createElement("script");
     s.src = "https://telegram.org/js/telegram-web-app.js";

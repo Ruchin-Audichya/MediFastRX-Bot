@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api, haptic } from "../api.ts";
+import { api, authHeader, haptic } from "../api.ts";
 import { useLive, useNow, km, secs, clock } from "../hooks.ts";
 import { MapView } from "../components/MapView.tsx";
 
@@ -53,6 +53,12 @@ export default function Board() {
           {open && ` · open ${Math.max(1, Math.ceil((ask.expires_at - now) / 60_000))} more min`}
         </p>
       </header>
+      {authHeader()?.startsWith("web ") && (
+        <p className="web-note">
+          {open ? "Keep this page open: answers appear here as pharmacists reply. Bookmark it to come back; it works only in this browser." : "Bookmark this page to keep your pickup details. It works only in this browser."}
+          {" "}<a href="/find">New search</a>
+        </p>
+      )}
       {open && <div className="progress" aria-hidden="true"><i style={{ width: `${(counts.answered / Math.max(1, counts.asked)) * 100}%` }} /></div>}
       <div className="items">
         {ask.items.map((i: any) => <span key={i.productId} className="tag">{i.label}{i.qty > 1 ? ` ×${i.qty}` : ""}{i.schedule === "rx" ? " ℞" : ""}</span>)}

@@ -128,7 +128,7 @@ Web app   ─┴─▶  API  ─┼─▶  Domain rules  ─▶  SQLite
 
 - **One process, one database.** Node 24 runs TypeScript directly; SQLite is built in.
 - **One brain.** Every rule lives in `src/domain/medifast.ts`. Telegram, the web and the demo all call it.
-- **Tested end to end.** 42 tests, including full Telegram conversations. CI runs them on every push.
+- **Tested end to end.** 43 tests, including full Telegram conversations. CI runs them on every push.
 
 📖 More: [Business model](docs/BUSINESS.md) · [Architecture](docs/ARCHITECTURE.md) · [Go live](docs/GO_LIVE.md) · [Deploy](docs/DEPLOY.md) · [Pilot kit](docs/PILOT_KIT.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
 

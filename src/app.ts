@@ -49,10 +49,12 @@ export function createApp(config: Config, opts: { extract?: Extractor; fetcher?:
     live: {
       board: (id) => (https ? { url: `${config.publicUrl}/app/ask/${id}`, webApp: true } : null),
       desk: () => (https ? { url: `${config.publicUrl}/app/desk`, webApp: true } : null),
+      find: (q) => (https ? `${config.publicUrl}/find?${new URLSearchParams(q as Record<string, string>)}` : null),
     },
     studio: {
       board: (id) => ({ url: `${config.baseUrl}/app/ask/${id}?as=customer`, webApp: false }),
       desk: () => ({ url: `${config.baseUrl}/app/desk?as=pharmacist`, webApp: false }),
+      find: (q) => `${config.baseUrl}/find?${new URLSearchParams(q as Record<string, string>)}`,
     },
   };
 

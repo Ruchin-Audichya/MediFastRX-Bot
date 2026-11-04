@@ -9,7 +9,9 @@ import type { Cache, Http } from "../net/http.ts";
 export type PinPlace = { pincode: string; place: string; district: string | null; state: string | null; lat: number; lng: number; source: string };
 export type PinResult = { ok: true; place: PinPlace } | { ok: false; reason: "invalid" | "not-found" | "unavailable" };
 
-export const isPincode = (s: string) => /^[1-9]\d{5}$/.test(s.trim());
+/** People write "302 021" or "302-021"; we accept both. */
+export const normalizePin = (s: string) => s.replace(/[\s-]/g, "");
+export const isPincode = (s: string) => /^[1-9]\d{5}$/.test(normalizePin(s));
 const inIndia = (lat: number, lng: number) => lat > 6 && lat < 37.5 && lng > 68 && lng < 97.5;
 
 export function createPincodes(db: DB, opts: { http?: Http; cache?: Cache; geocoder?: boolean } = {}) {
@@ -18,7 +20,7 @@ export function createPincodes(db: DB, opts: { http?: Http; cache?: Cache; geoco
   const insertIfMissing = db.prepare("INSERT OR IGNORE INTO pincodes(pincode, place, district, state, lat, lng, source) VALUES (?,?,?,?,?,?,?)");
 
   async function lookup(raw: string): Promise<PinResult> {
-    const pin = raw.trim();
+    const pin = normalizePin(raw);
     if (!isPincode(pin)) return { ok: false, reason: "invalid" };
     const row = byPin.get(pin) as PinPlace | undefined;
     if (row) return { ok: true, place: row };

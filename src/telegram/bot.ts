@@ -83,7 +83,7 @@ export function createBot(deps: BotDeps) {
   bot.command("info", (ctx) => {
     const q = String(ctx.match ?? "").trim();
     if (!q) return ctx.reply("Send /info with a medicine name, e.g. <code>/info Pan D</code>.", { parse_mode: "HTML" });
-    return reply(ctx, V.kbAnswer(kb, mf.catalog, "about", q));
+    return reply(ctx, V.kbAnswer(kb, mf.catalog, "about", q, undefined, deps.links));
   });
   bot.command("privacy", (ctx) => reply(ctx, V.privacy));
   bot.command("list", (ctx) => reply(ctx, V.listCard(mf, mf.drafts.get(ctx.user.id))));
@@ -196,7 +196,7 @@ export function createBot(deps: BotDeps) {
       setState(ctx, null);
       await showList(ctx, `✓ Added ${s.batch.length} medicine${s.batch.length > 1 ? "s" : ""}.`);
     }],
-    [/^info:([\w-]+)$/, (ctx, m) => { const p = mf.catalog.get(m[1]); return p ? reply(ctx, V.kbAnswer(kb, mf.catalog, "about", p.brand, p)) : undefined; }],
+    [/^info:([\w-]+)$/, (ctx, m) => { const p = mf.catalog.get(m[1]); return p ? reply(ctx, V.kbAnswer(kb, mf.catalog, "about", p.brand, p, deps.links)) : undefined; }],
     [/^nope$/, (ctx) => edit(ctx, { text: "No problem. Type the name exactly as printed on the strip, or the salt name (for example <code>pantoprazole 40</code>)." })],
     [/^q:([\w-]+):(-?\d)$/, async (ctx, m) => { if (m[2] !== "0") mf.drafts.change(ctx.user.id, m[1], Number(m[2])); await showList(ctx); }],
     [/^rm:([\w-]+)$/, async (ctx, m) => { mf.drafts.remove(ctx.user.id, m[1]); await showList(ctx); }],
@@ -408,11 +408,14 @@ export function createBot(deps: BotDeps) {
       if (!r.ok) return ctx.reply(r.reason === "unavailable" ? "I couldn't look up that pincode right now. Share your location or pick an area instead." : "I couldn't find that pincode. Check it, or share your location instead.");
       mf.users.setLocation(ctx.user.id, { lat: r.place.lat, lng: r.place.lng, place: `${r.place.place} (${r.place.pincode})` });
       await ctx.reply(`📍 Looking around <b>${V.esc(r.place.place)}</b>, ${V.esc(r.place.pincode)}.`, { parse_mode: "HTML", reply_markup: { remove_keyboard: true } });
-      return mf.drafts.get(ctx.user.id).length ? reply(ctx, confirmView(mf.users.get(ctx.user.id)!)) : ctx.reply("Now tell me which medicines you need.");
+      if (mf.drafts.get(ctx.user.id).length) return reply(ctx, confirmView(mf.users.get(ctx.user.id)!));
+      // People often type the pincode before tapping "Add" on the card we just sent: point them back to it.
+      const pending = s && "batch" in s;
+      return ctx.reply(pending ? "Now tap <b>✚ Add</b> on the medicines card above, and I'll get your request ready." : "Now tell me which medicines you need, or tap <b>✚ Add</b> on a medicine card above.", HTML);
     }
     if (text.length > 600) return ctx.reply("That's long. Send up to about 10 medicine names.");
     const question = kb.intent(text);
-    if (question) return reply(ctx, V.kbAnswer(kb, mf.catalog, question.intent, question.subject));
+    if (question) return reply(ctx, V.kbAnswer(kb, mf.catalog, question.intent, question.subject, undefined, deps.links));
     await handleMedicineText(ctx, text);
   });
 

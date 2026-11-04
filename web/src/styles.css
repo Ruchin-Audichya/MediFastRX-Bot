@@ -177,7 +177,7 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 24px; fl
   .steps { grid-template-columns: 1fr 1fr; }
   .problem, .trust { grid-template-columns: 1fr; }
   .pharm { padding: 32px 22px; }
-  .nav-links a:not(.btn) { display: none; }
+  .nav-links a:not(.btn):not(.nav-keep) { display: none; }
 }
 @media (max-width: 560px) {
   .steps { grid-template-columns: 1fr; }
@@ -426,3 +426,5 @@ button.kb-name:hover { color: var(--brand-ink); text-decoration: underline; }
   .dir-map { height: 260px; }
   .tier { padding: 18px 16px; }
 }
+.web-note { margin: 0 16px 10px; padding: 10px 14px; border-radius: var(--r); background: var(--brand-soft); color: var(--brand-ink); font-size: 13.5px; }
+.web-note a { font-weight: 700; color: inherit; }

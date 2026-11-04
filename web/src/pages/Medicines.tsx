@@ -40,7 +40,7 @@ export default function Medicines() {
   const pick = (t: string) => { setQ(t); search(t); };
 
   const askLink = (p: P) => (bot ? `https://t.me/${bot}?start=add_${p.id}` : `/studio`);
-  const online = (term: string) => `https://blinkit.com/s/?q=${encodeURIComponent(term)}`;
+  const findLink = () => (res?.focus ? `/find?id=${res.focus.id}` : `/find?q=${encodeURIComponent(res?.salts[0]?.salt ?? "")}`);
   const restricted = res?.focus ? res.focus.schedule === "restricted" : res?.salts.some((s) => s.restricted);
 
   return (
@@ -127,8 +127,8 @@ export default function Medicines() {
 
             {!restricted && (
               <div className="kb-actions">
-                {res.focus && <a className="btn btn-primary" href={askLink(res.focus)}>📡 Ask nearby pharmacies{bot ? " on Telegram" : " (demo)"}</a>}
-                <a className="btn btn-ghost" href={online(res.focus ? res.focus.brand : res.salts[0].salt)} target="_blank" rel="noreferrer">🛵 Search online (Blinkit)</a>
+                <a className="btn btn-primary" href={findLink()}>📍 Where can I get it?</a>
+                {res.focus && bot && <a className="btn btn-ghost" href={askLink(res.focus)}>📡 Ask nearby on Telegram</a>}
               </div>
             )}
             <p className="kb-foot">Information only. Your doctor or pharmacist decides what’s right for you, so don’t switch brand or strength without asking. Sources: {res.sources.join("; ")}.</p>

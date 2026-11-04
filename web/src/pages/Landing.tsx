@@ -58,7 +58,7 @@ export default function Landing() {
             </p>
             <form className="find-form hero-find" action="/find" role="search">
               <label><span>Medicine</span><input name="q" placeholder="e.g. Dolo 650" autoComplete="off" required /></label>
-              <label className="pin"><span>Pincode</span><input name="pin" inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} placeholder="302021" autoComplete="postal-code" /></label>
+              <label className="pin"><span>Pincode</span><input name="pin" inputMode="numeric" maxLength={8} placeholder="302021" autoComplete="postal-code" /></label>
               <button className="btn btn-primary" type="submit">Find</button>
             </form>
             <div className="ctas" style={{ marginTop: 18 }}>

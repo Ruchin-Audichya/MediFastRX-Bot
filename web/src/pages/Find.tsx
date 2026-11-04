@@ -62,7 +62,7 @@ export default function Find() {
   const [params, setParams] = useSearchParams();
   const nav = useNavigate();
   const [q, setQ] = useState(params.get("q") ?? "");
-  const [pin, setPin] = useState(params.get("pin") ?? savedPin());
+  const [pin, setPin] = useState((params.get("pin") ?? savedPin()).replace(/\D/g, "").slice(0, 6));
   const [res, setRes] = useState<FindResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
