@@ -114,7 +114,9 @@ export function createBot(deps: BotDeps) {
       return reply(ctx, V.notFound(name));
     }
     const exact = lines.flatMap((l) => (l.result.kind === "exact" ? [{ productId: l.result.product.id, qty: l.qty, product: l.result.product }] : []));
-    const unknown = lines.filter((l) => l.result.kind === "none").map((l) => l.line);
+    // From a scan, only flag unmatched lines that look like medicines (a strength or a form), not letterhead.
+    const looksLikeMedicine = (l: string) => /\d\s*(mg|mcg|ml|g|iu|%)\b|\b(tab|tablet|cap|capsule|syp|syrup|cream|gel|drops|inhaler)\b/i.test(l);
+    const unknown = lines.filter((l) => l.result.kind === "none" && (source === "typed" || looksLikeMedicine(l.line))).map((l) => l.line);
     const head = source === "scan" ? "📷 <b>From your prescription I could read:</b>" : "<b>Here's what I matched:</b>";
     if (exact.length) {
       setState(ctx, { batch: exact.map(({ productId, qty }) => ({ productId, qty })) });

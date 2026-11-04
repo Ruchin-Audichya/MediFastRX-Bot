@@ -27,6 +27,7 @@ async function startLiveBot() {
     { command: "privacy", description: "What we store" },
   ]);
   const https = config.publicUrl.startsWith("https://");
+  if (https) await bot.api.setChatMenuButton({ menu_button: { type: "web_app", text: "MediFast", web_app: { url: `${config.publicUrl}/app` } } });
   const webhook = config.telegram.mode === "webhook" || (config.telegram.mode === "auto" && https && !!config.telegram.webhookSecret);
   if (webhook) {
     await bot.api.setWebhook(`${config.publicUrl}/telegram/webhook`, { secret_token: config.telegram.webhookSecret, allowed_updates: ["message", "callback_query"], drop_pending_updates: false });

@@ -30,6 +30,8 @@ export function createServer(app: App) {
           imgSrc: ["'self'", "data:", "blob:", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org"],
           connectSrc: ["'self'"],
           frameAncestors: ["'self'", "https://web.telegram.org", "https://*.telegram.org"],
+          // Only on HTTPS deployments; on a LAN demo over http it would break every asset.
+          upgradeInsecureRequests: config.publicUrl.startsWith("https://") ? [] : null,
         },
       },
       frameguard: false, // Mini Apps render inside Telegram's web client

@@ -1,0 +1,23 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Smoke-test the production server
+        run: |
+          DATABASE_PATH=/tmp/ci.db node src/main.ts &
+          for i in $(seq 1 20); do curl -fs localhost:3000/healthz && break; sleep 0.5; done
+          curl -fs localhost:3000/api/public/overview | grep -q '"catalogSize":105'
+          curl -fs localhost:3000/studio | grep -q '<div id="root">'

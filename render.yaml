@@ -1,0 +1,27 @@
+# Render Blueprint. The disk keeps SQLite across deploys (needs a paid instance).
+# On the free plan, remove `disk`: the database then resets on each deploy and the demo re-seeds itself.
+services:
+  - type: web
+    name: medifast
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: DEMO_MODE
+        value: "true"
+      - key: DATABASE_PATH
+        value: /data/medifast.db
+      - key: PUBLIC_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      name: medifast-data
+      mountPath: /data
+      sizeGB: 1
