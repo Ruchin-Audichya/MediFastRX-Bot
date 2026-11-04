@@ -67,6 +67,13 @@ const MIGRATIONS: string[] = [
      id INTEGER PRIMARY KEY,
      ask_id TEXT, kind TEXT NOT NULL, actor INTEGER, data TEXT, at INTEGER NOT NULL);
    CREATE INDEX events_ask ON events(ask_id, at);`,
+  // v2: pincode directory and a small TTL cache for external lookups (geocoding, pharmacy directory).
+  `CREATE TABLE pincodes(
+     pincode TEXT PRIMARY KEY,
+     place TEXT NOT NULL, district TEXT, state TEXT,
+     lat REAL NOT NULL, lng REAL NOT NULL,
+     source TEXT NOT NULL);
+   CREATE TABLE cache(key TEXT PRIMARY KEY, value TEXT NOT NULL, expires_at INTEGER NOT NULL);`,
 ];
 
 export type DB = DatabaseSync;

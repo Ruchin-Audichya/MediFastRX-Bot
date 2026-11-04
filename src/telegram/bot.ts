@@ -5,6 +5,7 @@ import type { Area } from "../domain/seed.ts";
 import { distanceM } from "../domain/geo.ts";
 import * as V from "./views.ts";
 import { createKnowledgeBase } from "../kb/kb.ts";
+import { isPincode, type Pincodes } from "../geo/pincode.ts";
 
 export type BotDeps = {
   mf: MediFast;
@@ -16,6 +17,7 @@ export type BotDeps = {
   adminIds: Set<string>; // Telegram user ids that are admins on this transport
   extract: (image: Buffer, mime: string) => Promise<string>;
   download: (api: Api, fileId: string) => Promise<{ data: Buffer; mime: string }>;
+  pincodes?: Pincodes;
 };
 
 type Ctx = Context & { user: User };
@@ -401,6 +403,13 @@ export function createBot(deps: BotDeps) {
     }
     if (s && "await" in s && s.await === "partner") return partnerStep(ctx, s, text);
     if (GREETING.test(text) && text.length < 20) return reply(ctx, V.welcome(ctx.user.name));
+    if (isPincode(text) && deps.pincodes) {
+      const r = await deps.pincodes.lookup(text);
+      if (!r.ok) return ctx.reply(r.reason === "unavailable" ? "I couldn't look up that pincode right now. Share your location or pick an area instead." : "I couldn't find that pincode. Check it, or share your location instead.");
+      mf.users.setLocation(ctx.user.id, { lat: r.place.lat, lng: r.place.lng, place: `${r.place.place} (${r.place.pincode})` });
+      await ctx.reply(`📍 Looking around <b>${V.esc(r.place.place)}</b>, ${V.esc(r.place.pincode)}.`, { parse_mode: "HTML", reply_markup: { remove_keyboard: true } });
+      return mf.drafts.get(ctx.user.id).length ? reply(ctx, confirmView(mf.users.get(ctx.user.id)!)) : ctx.reply("Now tell me which medicines you need.");
+    }
     if (text.length > 600) return ctx.reply("That's long. Send up to about 10 medicine names.");
     const question = kb.intent(text);
     if (question) return reply(ctx, V.kbAnswer(kb, mf.catalog, question.intent, question.subject));

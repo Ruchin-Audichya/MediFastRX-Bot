@@ -6,7 +6,7 @@ import { distanceM, validPoint, type Point } from "./geo.ts";
 
 // ───────────────────────────── Types ─────────────────────────────
 
-export type Transport = "live" | "studio" | "sim";
+export type Transport = "live" | "studio" | "sim" | "web";
 export type User = {
   id: number; ref: string; transport: Transport; chat_id: string; name: string; username: string | null;
   is_admin: number; lat: number | null; lng: number | null; place: string | null; radius_km: number;

@@ -33,7 +33,7 @@ const BOARD_HTML =
 export default function Landing() {
   const [o, setO] = useState<Overview | null>(null);
   const [lit, setLit] = useState(0);
-  useEffect(() => { document.title = "MediFast: ask every chemist nearby, at once"; api<Overview>("/public/overview").then(setO).catch(() => {}); }, []);
+  useEffect(() => { document.title = "MediFast: find your medicine nearby or online"; api<Overview>("/public/overview").then(setO).catch(() => {}); }, []);
   useEffect(() => {
     const t = setInterval(() => setLit((n) => (n >= RADAR.length + 3 ? 0 : n + 1)), 900);
     return () => clearInterval(t);
@@ -50,17 +50,22 @@ export default function Landing() {
       <header className="hero">
         <div className="wrap">
           <div>
-            <span className="eyebrow" style={{ color: "#3ee59a" }}>On Telegram · piloting in Jaipur</span>
-            <h1 style={{ marginTop: 16 }}>Ask every chemist nearby. <em>At once.</em></h1>
+            <span className="eyebrow" style={{ color: "#3ee59a" }}>Nearby chemists · online pharmacies · quick delivery</span>
+            <h1 style={{ marginTop: 16 }}>Find your medicine. <em>You choose where.</em></h1>
             <p className="lead">
-              Send your medicine list to MediFast on Telegram. Every participating pharmacy around you gets it instantly, taps what they have,
-              and you watch the answers arrive. Reserve the best one, then walk in and pick up.
+              Type a medicine and your pincode. Ask participating chemists around you to check the shelf, see every pharmacy mapped nearby,
+              or open the online pharmacies. No made-up stock, no made-up prices.
             </p>
-            <div className="ctas">
-              {tgLink ? <a className="btn btn-primary" href={tgLink}>Open MediFast in Telegram</a> : <a className="btn btn-primary" href="/studio">Try the live demo</a>}
-              {tgLink ? <a className="btn btn-light" href="/studio">Watch the live demo</a> : <a className="btn btn-light" href="#how">How it works</a>}
+            <form className="find-form hero-find" action="/find" role="search">
+              <label><span>Medicine</span><input name="q" placeholder="e.g. Dolo 650" autoComplete="off" required /></label>
+              <label className="pin"><span>Pincode</span><input name="pin" inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} placeholder="302021" autoComplete="postal-code" /></label>
+              <button className="btn btn-primary" type="submit">Find</button>
+            </form>
+            <div className="ctas" style={{ marginTop: 18 }}>
+              {tgLink && <a className="btn btn-light btn-sm" href={tgLink}>Open MediFast in Telegram</a>}
+              <a className="btn btn-light btn-sm" href="/studio">Watch the live demo</a>
             </div>
-            <p className="fine"><span className="live-dot" /> No app to install · No stock uploads for pharmacies · Pay at the counter</p>
+            <p className="fine"><span className="live-dot" /> No sign-up · On Telegram and the web · Pay where you buy</p>
           </div>
           <div className="radar" aria-label="Illustration: a request reaching pharmacies around you, answers lighting up">
             {[100, 72, 44].map((s) => <div key={s} className="ring" style={{ width: `${s}%`, height: `${s}%` }} />)}

@@ -111,7 +111,7 @@ export function listCard(mf: MediFast, items: DraftItem[], note = ""): View {
 export function whereCard(areas: Area[]): View {
   const kb = new InlineKeyboard();
   areas.forEach((a, i) => { kb.text(a.name, `area:${a.id}`); if (i % 2) kb.row(); });
-  return { text: `📍 <b>Where should I look?</b>\n\nTap <b>Share location</b> below for the most accurate distances, or pick an area of Jaipur:`, keyboard: kb };
+  return { text: `📍 <b>Where should I look?</b>\n\nTap <b>Share location</b> below for the most accurate distances, <b>type your 6-digit pincode</b>, or pick an area of Jaipur:`, keyboard: kb };
 }
 
 export function confirmAsk(place: string, radius: number, count: number, nearestM: number | null, items: number): View {

@@ -32,11 +32,28 @@ export const keyQuery = (sep = "?") => (studioKey() ? `${sep}key=${encodeURIComp
 
 export const tg = () => (window.Telegram?.WebApp?.initData ? window.Telegram.WebApp : null);
 
+const WEB_KEY = "medifast.webToken";
+function webToken(): string | null {
+  try { return localStorage.getItem(WEB_KEY); } catch { return null; }
+}
+/** Anonymous website session (no Telegram needed). The token never leaves this browser except to our API. */
+export async function ensureWebSession(): Promise<void> {
+  if (tg() || persona() || webToken()) return;
+  const { token } = await api<{ token: string }>("/web/session", {});
+  try { localStorage.setItem(WEB_KEY, token); } catch {}
+}
+
+export function resetWebSession() {
+  try { localStorage.removeItem(WEB_KEY); } catch {}
+}
+
 export function authHeader(): string | null {
   const app = tg();
   if (app) return `tma ${app.initData}`;
   const p = persona();
-  return p ? `studio ${p}` : null;
+  if (p) return `studio ${p}`;
+  const w = webToken();
+  return w ? `web ${w}` : null;
 }
 
 export class ApiError extends Error {

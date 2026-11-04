@@ -26,6 +26,11 @@ export function loadConfig(over: Partial<Record<string, string>> = {}) {
       studioPassword: e.STUDIO_PASSWORD ?? "",
     },
     anthropicKey: e.ANTHROPIC_API_KEY ?? "",
+    // Pincode geocoding (OSM Nominatim) and nearby-pharmacy listings (OSM Overpass). Both are free,
+    // keyless and cached; set EXTERNAL_LOOKUPS=false for fully offline runs.
+    externalLookups: (e.EXTERNAL_LOOKUPS ?? "true") !== "false",
+    // Disclosed affiliate parameters for online-pharmacy links, e.g. AFFILIATE_1MG="utm_source=medifast".
+    affiliates: Object.fromEntries(Object.entries(e).filter(([k, v]) => k.startsWith("AFFILIATE_") && v).map(([k, v]) => [k.slice(10).toLowerCase(), String(v)])),
     // Map tiles: OpenStreetMap data needs no key. Set MAP_TILE_URL only to use a keyed provider (MapTiler, Stadia…).
     map: {
       tileUrl: e.MAP_TILE_URL || "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",

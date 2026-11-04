@@ -4,10 +4,10 @@
 
 # MediFast
 
-**Ask every chemist nearby. At once.**
+**Find your medicine. You choose where.**
 
-Send your medicine list on Telegram. Nearby pharmacies tap what they have.<br />
-You see the answers live, reserve, and pick up.
+Type a medicine and your pincode. Ask the chemists nearby to check the shelf,<br />
+call a pharmacy from the map, or open an online pharmacy. Nothing is made up.
 
 [![CI](https://github.com/Ruchin-Audichya/MediFastRX-Bot/actions/workflows/test.yml/badge.svg)](https://github.com/Ruchin-Audichya/MediFastRX-Bot/actions/workflows/test.yml)
 ![Node](https://img.shields.io/badge/Node-24-339933?logo=nodedotjs&logoColor=white)
@@ -29,7 +29,23 @@ Apps that list pharmacy stock don't fix this, because small chemists can't keep 
 
 **MediFast asks the pharmacist instead.** Your list goes to every participating pharmacy near you at the same time. Each one answers in a few taps. You know where to go before you leave home.
 
-## ✨ How it works
+## 🔎 Medicine + pincode → where to get it
+
+Search on the website (`/find`) or type a 6-digit pincode to the bot. MediFast first confirms the exact product; strength and form are never guessed. Then it asks three sources in parallel. Each source says exactly how much it knows:
+
+| Option | What you see | How sure we are |
+| --- | --- | --- |
+| **1. Ask pharmacies near you** | How many participating chemists are within 2–5 km. One tap sends them your request, no sign-up needed. | ✅ **Pharmacist confirms.** Nothing is shown until a pharmacist answers. |
+| **2. Pharmacies on the map** | Real pharmacies from OpenStreetMap, with distance, phone, opening hours and directions | 🟡 **Stock unknown.** Call before you go. |
+| **3. Buy online** | Tata 1mg, PharmEasy, Apollo 24\|7 and Netmeds, then Blinkit last as the quick-delivery fallback | ⚪ **Not checked by MediFast.** The platform shows its own price, stock and delivery. |
+
+A source that fails or times out shows as *unavailable*; the others still answer. Habit-forming medicines are never broadcast to pharmacies or linked to online platforms. Prescription medicines carry a ℞ note on every option.
+
+**Why no Blinkit or 1mg stock check?** None of these platforms has a public availability API. The community Blinkit MCP server uses a reverse-engineered endpoint, and its browser fallback marks every result `in_stock: true`. So MediFast opens each platform's own search page instead, and labels it honestly.
+
+Pincodes come from the India Post directory (`npm run import:pincodes -- all_india_pincode.csv`). For anything not imported, MediFast falls back to OpenStreetMap Nominatim and caches the result.
+
+## ✨ How asking nearby works
 
 | | |
 | --- | --- |
@@ -64,7 +80,6 @@ Load the official PMBJP list (about 2,100 generics) with one command:
 npm run import:janaushadhi -- path/to/janaushadhi-list.csv --as-of 2025-12-31
 ```
 
-Nothing nearby? The board offers **🛵 Find it online**, which opens Blinkit's own search for that medicine. The customer opens it; MediFast doesn't scrape anyone.
 
 ## 🛡️ Built to be careful
 
@@ -113,9 +128,9 @@ Web app   ─┴─▶  API  ─┼─▶  Domain rules  ─▶  SQLite
 
 - **One process, one database.** Node 24 runs TypeScript directly; SQLite is built in.
 - **One brain.** Every rule lives in `src/domain/medifast.ts`. Telegram, the web and the demo all call it.
-- **Tested end to end.** 36 tests, including full Telegram conversations. CI runs them on every push.
+- **Tested end to end.** 42 tests, including full Telegram conversations. CI runs them on every push.
 
-📖 More: [Architecture](docs/ARCHITECTURE.md) · [Go live](docs/GO_LIVE.md) · [Deploy](docs/DEPLOY.md) · [Pilot kit](docs/PILOT_KIT.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
+📖 More: [Business model](docs/BUSINESS.md) · [Architecture](docs/ARCHITECTURE.md) · [Go live](docs/GO_LIVE.md) · [Deploy](docs/DEPLOY.md) · [Pilot kit](docs/PILOT_KIT.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
 
 ## 📝 Good to know
 

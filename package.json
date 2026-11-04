@@ -17,7 +17,8 @@
     "bot:check": "node src/scripts/bot-check.ts",
     "evaluate": "node src/scripts/evaluate.ts",
     "demo": "node launcher/launch.mjs",
-    "import:janaushadhi": "node src/scripts/import-janaushadhi.ts"
+    "import:janaushadhi": "node src/scripts/import-janaushadhi.ts",
+    "import:pincodes": "node src/scripts/import-pincodes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",

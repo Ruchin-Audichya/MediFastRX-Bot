@@ -12,7 +12,7 @@ const HTML = { parse_mode: "HTML" as const, link_preview_options: { is_disabled:
  * made from Telegram, the web desk, or the simulator renders identically everywhere.
  */
 export function createNotifier(mf: MediFast, opts: { apis: Partial<Record<"live" | "studio", Api>>; links: Record<"live" | "studio", V.Links>; sim?: SimHooks; minEditGapMs?: Partial<Record<"live" | "studio", number>> }) {
-  const apiFor = (u: User | undefined) => (u && u.transport !== "sim" ? opts.apis[u.transport] : undefined);
+  const apiFor = (u: User | undefined) => (u && (u.transport === "live" || u.transport === "studio") ? opts.apis[u.transport] : undefined); // web and sim users get no Telegram messages
   const linksFor = (u: User | undefined) => opts.links[u?.transport === "live" ? "live" : "studio"];
   const gap = (u: User) => opts.minEditGapMs?.[u.transport as "live"] ?? (u.transport === "live" ? 1100 : 0);
 

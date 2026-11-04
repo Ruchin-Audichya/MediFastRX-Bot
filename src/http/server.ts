@@ -10,7 +10,7 @@ import { label } from "../catalog/catalog.ts";
 import { PERSONAS, type App, type PersonaKey } from "../app.ts";
 import { verifyInitData } from "./auth.ts";
 import { createKnowledgeBase } from "../kb/kb.ts";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 type Req = Request & { user?: User };
 const WEB_DIST = fileURLToPath(new URL("../../web/dist", import.meta.url));
@@ -65,6 +65,8 @@ export function createServer(app: App) {
   api.use("/studio", (req, res, next) =>
     studioOpen(req) ? next() : res.status(401).json({ error: { code: "studio-locked", message: "Demo Studio is password-protected." } }));
 
+  const webRef = (token: string) => `web:${createHash("sha256").update(token).digest("hex").slice(0, 32)}`;
+
   // ── Identity: Telegram Mini App initData, or a demo persona in demo mode.
   api.use((req: Req, _res, next) => {
     // EventSource can't set headers, so /events may carry the same credential as ?auth=.
@@ -75,6 +77,10 @@ export function createServer(app: App) {
     } else if (auth.startsWith("studio ") && config.demo.enabled && studioOpen(req)) {
       const p = PERSONAS[auth.slice(7) as PersonaKey];
       if (p) req.user = mf.users.byRef(p.ref);
+    } else if (auth.startsWith("web ")) {
+      // Anonymous website visitor: a random token kept in their browser; we store only its hash.
+      const t = auth.slice(4);
+      if (/^[a-f0-9]{48}$/.test(t)) req.user = mf.users.byRef(webRef(t));
     }
     next();
   });
@@ -100,6 +106,35 @@ export function createServer(app: App) {
     pharmacies: mf.pharmacies.list("approved").map((p) => ({ name: p.name, area: p.area, lat: p.lat, lng: p.lng, demo: !!p.demo })),
     metrics: mf.history.metrics(),
   })));
+  // ── Find: medicine + pincode → where to get it (the core flow).
+  const findLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false });
+  api.get("/find", findLimit, wrap(async (req) => app.finder({
+    q: String(req.query.q ?? ""), productId: String(req.query.id ?? "") || undefined, pin: String(req.query.pin ?? "") || undefined,
+  })));
+  api.get("/pincode/:pin", findLimit, wrap(async (req) => {
+    const r = await app.pincodes.lookup(String(req.params.pin));
+    return r.ok ? r.place : fail(r.reason === "invalid" ? 400 : 404, r.reason, r.reason === "unavailable" ? "Couldn't look up that pincode right now." : "We couldn't find that pincode.");
+  }));
+
+  // ── Website visitors can ask pharmacies too (no Telegram needed). Limits stop abuse.
+  const sessionLimit = rateLimit({ windowMs: 3_600_000, limit: 20, standardHeaders: "draft-8", legacyHeaders: false });
+  const webAskLimit = rateLimit({ windowMs: 3_600_000, limit: 6, standardHeaders: "draft-8", legacyHeaders: false,
+    handler: (_req, res) => res.status(429).json({ error: { code: "rate-limited", message: "Too many requests from this connection. Please try again in an hour." } }) });
+  api.post("/web/session", sessionLimit, wrap(() => {
+    const token = randomBytes(24).toString("hex");
+    mf.users.upsert({ ref: webRef(token), transport: "web", chatId: "", name: "Web customer" });
+    return { token };
+  }));
+  api.post("/web/asks", webAskLimit, wrap(async (req) => {
+    const u = need(req);
+    const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 10).map((i: any) => ({ productId: String(i?.productId ?? ""), qty: Math.min(20, Math.max(1, Number(i?.qty) || 1)) })) : [];
+    const loc = await app.pincodes.lookup(String(req.body?.pin ?? ""));
+    if (!loc.ok) return fail(400, "bad-pincode", "Enter a valid 6-digit pincode.");
+    const radiusKm = [1, 2, 5].includes(Number(req.body?.radiusKm)) ? Number(req.body.radiusKm) : 2;
+    const ask = mf.asks.create(u.id, { items, lat: loc.place.lat, lng: loc.place.lng, place: `${loc.place.place} (${loc.place.pincode})`, radiusKm });
+    return { askId: ask.id };
+  }));
+
   api.get("/public/kb", wrap((req) => {
     const raw = String(req.query.q ?? "").trim().slice(0, 80);
     if (!raw) return { query: raw, found: false };

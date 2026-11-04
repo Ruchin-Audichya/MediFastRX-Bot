@@ -105,6 +105,41 @@ erDiagram
 
 `src/kb/kb.ts` answers medicine questions deterministically. A small pattern matcher recognises the intent (*about*, *brands*, *generic*, *strengths*; English and common Hinglish). The resolver finds the product or salt, and the answer is assembled from the catalog plus the optional Jan Aushadhi list (`data/janaushadhi.json`, created by `npm run import:janaushadhi`). Every fact shown is traceable to a row of data, and unknown names produce "no information" instead of a guess.
 
+## Find: medicine + pincode → where to get it
+
+`GET /api/find?q=…&pin=…` (`src/find/find.ts`) runs in three steps:
+
+1. **Confirm the product.** The same exact-match resolver used by the bot. If the name is
+   ambiguous, it returns a `choose` stage, so strength is never guessed.
+2. **Resolve the pincode** (`src/geo/pincode.ts`):
+   - first from the `pincodes` table, which is filled by `npm run import:pincodes` from the India
+     Post directory, or seeded with the demo areas;
+   - otherwise from OpenStreetMap Nominatim. Lookups are rate-paced at 1 per second, the result is
+     checked against India's bounds, and it is cached, including "not found" for 7 days.
+3. **Run the providers in parallel** (`src/find/providers.ts`). Each has a timeout and error
+   isolation, and each returns `ok | empty | unavailable | skipped` plus a **verification label**:
+
+| Provider | Source | Verification |
+| --- | --- | --- |
+| `network` | Participating pharmacies within 2, then 5 km | `pharmacist-confirms`. The user sends an ask, and pharmacists answer it |
+| `directory` | OpenStreetMap Overpass `amenity=pharmacy` within 3 km, cached for 24 hours | `location-only`. Stock is unknown |
+| `online` | Search links for 1mg, PharmEasy, Apollo 24\|7 and Netmeds, with Blinkit last | `not-checked`. No scraping. Optional affiliate parameters are disclosed |
+
+Restricted (habit-forming) products skip `network` and `online`.
+
+External HTTP goes through `src/net/http.ts`, which provides a timeout, per-host pacing, an
+identifying User-Agent, and a SQLite TTL cache (`cache` table). Set `EXTERNAL_LOOKUPS=false` to run
+fully offline.
+
+**Website visitors** can send an ask without Telegram:
+
+- `POST /api/web/session` returns a random 48-hex token. It is kept in the browser, and only its
+  SHA-256 is stored, as the user ref `web:<hash>`.
+- `POST /api/web/asks` creates an ask (6 per hour per IP, plus the usual per-customer limits).
+- The live board at `/app/ask/:id` is visible only to that token.
+
+On Telegram, typing a 6-digit pincode sets the location, as an alternative to sharing it.
+
 ## Why these choices
 
 - **Telegram first:** no install for either side, push notifications for free, and an editable message is a natural live board. In India the equivalent at scale would be WhatsApp Business; the domain is channel-agnostic, so that's a new adapter, not a rewrite.

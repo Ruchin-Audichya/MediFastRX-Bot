@@ -11,6 +11,10 @@ import { createFakeTelegram, STUDIO_BOT } from "./studio/fakeTelegram.ts";
 import { createSimulator } from "./studio/simulator.ts";
 import { createExtractor, type Extractor } from "./extract/extract.ts";
 import type { Config } from "./config.ts";
+import { createCache, createHttp, type Fetcher } from "./net/http.ts";
+import { createPincodes, DEMO_PINCODES } from "./geo/pincode.ts";
+import { directoryProvider, networkProvider, onlineProvider } from "./find/providers.ts";
+import { createFinder } from "./find/find.ts";
 
 export const PERSONAS = {
   customer: { id: 1001, first_name: "Aarav", ref: STUDIO.customer },
@@ -20,10 +24,23 @@ export const PERSONAS = {
 export type PersonaKey = keyof typeof PERSONAS;
 
 /** Wires every layer together. The server and the tests both start here. */
-export function createApp(config: Config, opts: { extract?: Extractor } = {}) {
+export function createApp(config: Config, opts: { extract?: Extractor; fetcher?: Fetcher } = {}) {
   const db = openDatabase(config.databasePath);
   const catalog = createCatalog();
   const mf = createMediFast(db, catalog);
+  const cache = createCache(db);
+  const http = createHttp(opts.fetcher);
+  const pincodes = createPincodes(db, { http, cache, geocoder: config.externalLookups });
+  if (config.demo.enabled)
+    pincodes.seed(DEMO_PINCODES.map(([pin, areaId]) => {
+      const a = AREAS.find((x) => x.id === areaId)!;
+      return { pincode: pin, place: a.name, district: "Jaipur", state: "Rajasthan", lat: a.lat, lng: a.lng, source: "Demo: approximate area centre" };
+    }));
+  const finder = createFinder(catalog, pincodes, [
+    networkProvider(mf),
+    directoryProvider(http, cache, { enabled: config.externalLookups }),
+    onlineProvider(config.affiliates),
+  ]);
   const extract = opts.extract ?? createExtractor({ anthropicKey: config.anthropicKey });
   const secret = config.sessionSecret || randomBytes(32).toString("hex");
 
@@ -48,6 +65,7 @@ export function createApp(config: Config, opts: { extract?: Extractor } = {}) {
       mf, transport: "studio", token: "studio", botInfo: STUDIO_BOT, areas: AREAS, links: links.studio,
       adminIds: new Set([String(PERSONAS.admin.id)]), extract,
       download: async (_api, fileId) => fake.file(fileId) ?? Promise.reject(new Error("file not found")),
+      pincodes,
     });
     fake.attach(bot.api);
     apis.studio = bot.api;
@@ -58,7 +76,7 @@ export function createApp(config: Config, opts: { extract?: Extractor } = {}) {
   let live: ReturnType<typeof createBot> | null = null;
   if (config.telegram.token && config.telegram.mode !== "off") {
     live = createBot({
-      mf, transport: "live", token: config.telegram.token, areas: AREAS, links: links.live, adminIds: config.telegram.adminIds, extract,
+      mf, transport: "live", token: config.telegram.token, areas: AREAS, links: links.live, adminIds: config.telegram.adminIds, extract, pincodes,
       download: async (api, fileId) => {
         const file = await api.getFile(fileId);
         const res = await fetch(`https://api.telegram.org/file/bot${config.telegram.token}/${file.file_path}`);
@@ -81,7 +99,7 @@ export function createApp(config: Config, opts: { extract?: Extractor } = {}) {
   }
 
   return {
-    config, db, mf, catalog, studio, live, links, secret, notifier, resetStudio,
+    config, db, mf, catalog, studio, live, links, secret, notifier, resetStudio, pincodes, finder, cache,
     stop() { clearInterval(tick); sim?.stop(); db.close(); },
   };
 }
