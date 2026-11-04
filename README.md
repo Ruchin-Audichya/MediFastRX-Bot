@@ -86,7 +86,7 @@ npm run demo
 
 Demo Studio runs the real bot with a customer, a pharmacist and an admin side by side, plus a live map. Type `Dolo 650` and follow along.
 
-**Want the real Telegram bot?** Put your [@BotFather](https://t.me/BotFather) token in `.env` (see `.env.example`) and run `npm start` again. To go public, follow [docs/DEPLOY.md](docs/DEPLOY.md).
+**Want the real Telegram bot?** [docs/GO_LIVE.md](docs/GO_LIVE.md) takes you from a [@BotFather](https://t.me/BotFather) token to a public bot in about 30 minutes (`npm run bot:check` verifies your token). To run a pilot with real pharmacies, use the [pilot kit](docs/PILOT_KIT.md) and its printable [pharmacist guide](docs/pilot/pharmacist-guide.pdf).
 
 ## 🧱 Under the hood
 
@@ -101,12 +101,12 @@ Web app   ─┴─▶  API  ─┼─▶  Domain rules  ─▶  SQLite
 
 - **One process, one database.** Node 24 runs TypeScript directly; SQLite is built in.
 - **One brain.** Every rule lives in `src/domain/medifast.ts`. Telegram, the web and the demo all call it.
-- **Tested end to end.** 25 tests, including full Telegram conversations. CI runs them on every push.
+- **Tested end to end.** 27 tests, including full Telegram conversations. CI runs them on every push.
 
-📖 More: [Architecture](docs/ARCHITECTURE.md) · [Deploy](docs/DEPLOY.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
+📖 More: [Architecture](docs/ARCHITECTURE.md) · [Go live](docs/GO_LIVE.md) · [Deploy](docs/DEPLOY.md) · [Pilot kit](docs/PILOT_KIT.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
 
 ## 📝 Good to know
 
 MediFast is a 7th-semester major project. It isn't a pharmacy: it doesn't sell, prescribe or deliver medicines, and it isn't medical advice. The pharmacies in the demo are fictional and their replies are simulated. The medicine catalog is a starter set and should be checked against pack labels before a real pilot.
 
-<div align="center"><sub>Made with care in Jaipur 🩷</sub></div>
+<div align="center"><sub>MIT licensed · Made with care in Jaipur 🩷</sub></div>

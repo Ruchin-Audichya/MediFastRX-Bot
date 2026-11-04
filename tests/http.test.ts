@@ -6,14 +6,14 @@ import { loadConfig } from "../src/config.ts";
 import { createServer } from "../src/http/server.ts";
 import { signInitData, verifyInitData } from "../src/http/auth.ts";
 
-async function boot() {
-  const app = createApp(loadConfig({ DATABASE_PATH: ":memory:", DEMO_SPEED: "0", TELEGRAM_BOT_TOKEN: "", PUBLIC_URL: "" }), { extract: async () => "" });
+async function boot(extra: Record<string, string> = {}) {
+  const app = createApp(loadConfig({ DATABASE_PATH: ":memory:", DEMO_SPEED: "0", TELEGRAM_BOT_TOKEN: "", PUBLIC_URL: "", STUDIO_PASSWORD: "", ...extra }), { extract: async () => "" });
   const server = createServer(app).listen(0);
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
-  const call = async (path: string, opts: { as?: string; body?: unknown; method?: string } = {}) => {
+  const call = async (path: string, opts: { as?: string; body?: unknown; method?: string; key?: string } = {}) => {
     const res = await fetch(base + path, {
       method: opts.method ?? (opts.body ? "POST" : "GET"),
-      headers: { "content-type": "application/json", ...(opts.as ? { authorization: `studio ${opts.as}` } : {}) },
+      headers: { "content-type": "application/json", ...(opts.as ? { authorization: `studio ${opts.as}` } : {}), ...(opts.key ? { "x-studio-key": opts.key } : {}) },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });
     return { status: res.status, json: (await res.json().catch(() => null)) as any };
@@ -82,4 +82,16 @@ test("Mini App initData is verified with the bot token and expires", () => {
   assert.equal(verifyInitData(data, "999:other", 3600, now), null, "wrong bot token");
   assert.equal(verifyInitData(data.replace("Asha", "Eve"), token, 3600, now), null, "tampered");
   assert.equal(verifyInitData(data, token, 3600, now + 2 * 3600_000), null, "expired");
+});
+
+test("STUDIO_PASSWORD locks Demo Studio and its personas, and only the right key opens them", async () => {
+  const t = await boot({ STUDIO_PASSWORD: "viva-2026" });
+  assert.equal((await t.call("/studio/state")).json.error.code, "studio-locked");
+  assert.equal((await t.call("/studio/reset", { body: {} })).status, 401, "nobody can wipe the demo without the key");
+  assert.equal((await t.call("/studio/state", { key: "wrong" })).status, 401);
+  assert.equal((await t.call("/me", { as: "customer" })).status, 401, "personas need the key too");
+  assert.equal((await t.call("/studio/state", { key: "viva-2026" })).status, 200);
+  assert.equal((await t.call("/me", { as: "customer", key: "viva-2026" })).status, 200);
+  assert.equal((await t.call("/public/overview")).json.studioLocked, true);
+  t.close();
 });

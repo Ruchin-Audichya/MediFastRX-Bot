@@ -9,6 +9,7 @@ import { AREAS, DEMO_PHARMACIES } from "../domain/seed.ts";
 import { label } from "../catalog/catalog.ts";
 import { PERSONAS, type App, type PersonaKey } from "../app.ts";
 import { verifyInitData } from "./auth.ts";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 type Req = Request & { user?: User };
 const WEB_DIST = fileURLToPath(new URL("../../web/dist", import.meta.url));
@@ -49,6 +50,17 @@ export function createServer(app: App) {
   api.use(express.json({ limit: "64kb" }));
   api.use(rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: "draft-8", legacyHeaders: false }));
 
+  // ── Demo Studio lock: with STUDIO_PASSWORD set, studio routes and personas need the key.
+  const digest = (v: string) => createHash("sha256").update(v).digest();
+  const studioOpen = (req: Request) => {
+    const want = config.demo.studioPassword;
+    if (!want) return true;
+    const got = String(req.headers["x-studio-key"] ?? req.query.key ?? "");
+    return timingSafeEqual(digest(got), digest(want));
+  };
+  api.use("/studio", (req, res, next) =>
+    studioOpen(req) ? next() : res.status(401).json({ error: { code: "studio-locked", message: "Demo Studio is password-protected." } }));
+
   // ── Identity: Telegram Mini App initData, or a demo persona in demo mode.
   api.use((req: Req, _res, next) => {
     // EventSource can't set headers, so /events may carry the same credential as ?auth=.
@@ -56,7 +68,7 @@ export function createServer(app: App) {
     if (auth.startsWith("tma ") && config.telegram.token) {
       const tg = verifyInitData(auth.slice(4), config.telegram.token);
       if (tg) req.user = mf.users.upsert({ ref: `live:${tg.id}`, transport: "live", chatId: String(tg.id), name: [tg.first_name, tg.last_name].filter(Boolean).join(" "), username: tg.username });
-    } else if (auth.startsWith("studio ") && config.demo.enabled) {
+    } else if (auth.startsWith("studio ") && config.demo.enabled && studioOpen(req)) {
       const p = PERSONAS[auth.slice(7) as PersonaKey];
       if (p) req.user = mf.users.byRef(p.ref);
     }
@@ -75,6 +87,7 @@ export function createServer(app: App) {
   // ── Public
   api.get("/public/overview", wrap(() => ({
     demo: config.demo.enabled,
+    studioLocked: !!config.demo.studioPassword,
     bot: { live: !!app.live, username: app.live?.botInfo?.username ?? null },
     catalogSize: mf.catalog.size,
     areas: AREAS,

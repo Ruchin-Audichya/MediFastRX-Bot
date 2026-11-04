@@ -20,6 +20,16 @@ export function persona(): string | null {
     return q;
   }
 }
+const KEY = "medifast.studioKey";
+export function studioKey(): string {
+  try { return localStorage.getItem(KEY) ?? ""; } catch { return ""; }
+}
+export function setStudioKey(k: string) {
+  try { localStorage.setItem(KEY, k); } catch {}
+}
+/** Query suffix for EventSource URLs, which can't send headers. */
+export const keyQuery = (sep = "?") => (studioKey() ? `${sep}key=${encodeURIComponent(studioKey())}` : "");
+
 export const tg = () => (window.Telegram?.WebApp?.initData ? window.Telegram.WebApp : null);
 
 export function authHeader(): string | null {
@@ -44,7 +54,7 @@ export async function api<T = any>(path: string, body?: unknown, init: RequestIn
   const res = await fetch(`/api${path}`, {
     method: body === undefined ? "GET" : "POST",
     ...init,
-    headers: { ...(body !== undefined && !(body instanceof Blob) ? { "content-type": "application/json" } : {}), ...(auth ? { authorization: auth } : {}), ...(init.headers ?? {}) },
+    headers: { ...(body !== undefined && !(body instanceof Blob) ? { "content-type": "application/json" } : {}), ...(auth ? { authorization: auth } : {}), ...(studioKey() ? { "x-studio-key": studioKey() } : {}), ...(init.headers ?? {}) },
     body: body === undefined ? undefined : body instanceof Blob ? body : JSON.stringify(body),
   });
   const json = await res.json().catch(() => null);

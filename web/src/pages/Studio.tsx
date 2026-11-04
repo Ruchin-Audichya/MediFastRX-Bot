@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../api.ts";
+import { api, keyQuery, setStudioKey } from "../api.ts";
 import { TelegramPhone, type ChatSnapshot } from "../components/TelegramPhone.tsx";
 import { MapView, type MapPin } from "../components/MapView.tsx";
 import { Mark } from "../components/Logo.tsx";
@@ -22,11 +22,15 @@ export default function Studio() {
   const [right, setRight] = useState<"pharmacist" | "admin">("pharmacist");
   const [mobile, setMobile] = useState<"customer" | "map" | "pharmacist">("customer");
   const [error, setError] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [pw, setPw] = useState("");
+  const [tried, setTried] = useState(false);
   const askId = state?.asks[0] ?? null;
   const boardTimer = useRef<number | undefined>(undefined);
 
   const loadState = useCallback(async () => {
-    try { setState(await api<StudioState>("/studio/state")); setError(null); } catch (e: any) { setError(e.message); }
+    try { setState(await api<StudioState>("/studio/state")); setError(null); setLocked(false); }
+    catch (e: any) { if (e.code === "studio-locked") setLocked(true); else setError(e.message); }
   }, []);
   const loadBoard = useCallback(async (id: string | null) => {
     if (!id) return setBoard(null);
@@ -36,7 +40,8 @@ export default function Studio() {
   useEffect(() => { document.title = "Demo Studio · MediFast"; loadState(); }, [loadState]);
   useEffect(() => { loadBoard(askId); }, [askId, loadBoard]);
   useEffect(() => {
-    const es = new EventSource("/api/studio/stream");
+    if (locked) return;
+    const es = new EventSource(`/api/studio/stream${keyQuery()}`);
     es.addEventListener("chat", (e) => {
       const { persona, chat } = JSON.parse((e as MessageEvent).data);
       setState((s) => (s ? { ...s, personas: { ...s.personas, [persona]: { ...s.personas[persona as Persona], chat } } } : s));
@@ -50,7 +55,8 @@ export default function Studio() {
     });
     es.onopen = () => loadState();
     return () => es.close();
-  }, [loadState, loadBoard]);
+  }, [loadState, loadBoard, locked]);
+
 
   const say = (p: Persona) => (text: string) => api(`/studio/${p}/text`, { text });
   const press = (p: Persona) => (messageId: number, data: string) => api(`/studio/${p}/press`, { messageId, data });
@@ -80,6 +86,21 @@ export default function Studio() {
       };
     });
   }, [state, board]);
+
+  if (locked)
+    return (
+      <div className="mini" style={{ display: "grid", placeItems: "center" }}>
+        <form className="card" style={{ padding: 28, width: "min(380px, 92vw)", display: "grid", gap: 12 }}
+          onSubmit={(e) => { e.preventDefault(); setStudioKey(pw); setTried(true); loadState(); }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Mark size={30} /><b style={{ fontSize: 18 }}>Demo Studio is locked</b></div>
+          <p className="hint" style={{ color: "var(--muted)", fontSize: 14 }}>Enter the studio password to run the demo.</p>
+          <input type="password" autoFocus value={pw} onChange={(e) => setPw(e.target.value)} aria-label="Studio password"
+            style={{ minHeight: 44, borderRadius: 12, border: "1.5px solid var(--line)", padding: "0 12px", font: "inherit" }} />
+          {tried && <p role="alert" style={{ color: "var(--no)", fontSize: 14 }}>That password didn’t work.</p>}
+          <button className="btn btn-primary" type="submit">Unlock</button>
+        </form>
+      </div>
+    );
 
   const ask = board?.ask;
   const quick = [

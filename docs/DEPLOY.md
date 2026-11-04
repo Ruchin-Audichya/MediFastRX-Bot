@@ -17,7 +17,7 @@ fly volumes create medifast_data --size 1 --region bom
 ```
 
 ```bash
-fly secrets set TELEGRAM_BOT_TOKEN=... ADMIN_TELEGRAM_IDS=... TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 24) PUBLIC_URL=https://<your-app>.fly.dev
+fly secrets set TELEGRAM_BOT_TOKEN=... ADMIN_TELEGRAM_IDS=... TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 24) STUDIO_PASSWORD=<pick-one> PUBLIC_URL=https://<your-app>.fly.dev
 ```
 
 ```bash
@@ -27,14 +27,14 @@ fly deploy
 ## Option B: Render
 
 1. New → Blueprint → select this repository (it reads `render.yaml`).
-2. Fill in `PUBLIC_URL` (the `https://….onrender.com` address Render assigns), `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_IDS`, and optionally `ANTHROPIC_API_KEY`.
+2. Fill in `PUBLIC_URL` (the `https://….onrender.com` address Render assigns), `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_IDS`, `STUDIO_PASSWORD`, and optionally `ANTHROPIC_API_KEY`.
 3. The blueprint uses a paid instance with a 1 GB disk. On the free plan, delete the `disk` block. The database then resets on each deploy and the fictional demo network seeds itself again. Free instances also sleep when idle, which delays the first Telegram message after a pause.
 
 ## After the first deploy
 
 - Visit `https://<your-app>/healthz`. It should show `"live": true`.
 - Open your bot in Telegram and send `/start`. The menu button opens the Mini App.
-- `https://<your-app>/studio` keeps working for live demos (set `DEMO_MODE=false` to hide the fictional network in a real pilot).
+- `https://<your-app>/studio` keeps working for live demos and asks for `STUDIO_PASSWORD`, so strangers can’t reset it. Set `DEMO_MODE=false` to hide the fictional network in a real pilot.
 
 ## Going from demo to a real pilot
 

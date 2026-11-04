@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, authHeader } from "./api.ts";
+import { api, authHeader, keyQuery } from "./api.ts";
 
 /** Fetch + refetch on server-sent events. Events carry ids only; we always refetch. */
 export function useLive<T>(path: string | null, filter?: (type: string, data: any) => boolean) {
@@ -14,7 +14,7 @@ export function useLive<T>(path: string | null, filter?: (type: string, data: an
   useEffect(() => {
     const auth = authHeader();
     if (!path || !auth) return;
-    const es = new EventSource(`/api/events?auth=${encodeURIComponent(auth)}`);
+    const es = new EventSource(`/api/events?auth=${encodeURIComponent(auth)}${keyQuery("&")}`);
     const onEvent = (type: string) => (e: MessageEvent) => {
       if (filter && !filter(type, JSON.parse(e.data))) return;
       clearTimeout(timer.current);

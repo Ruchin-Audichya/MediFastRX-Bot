@@ -21,6 +21,8 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: STUDIO_PASSWORD
+        sync: false
     disk:
       name: medifast-data
       mountPath: /data

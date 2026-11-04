@@ -8,7 +8,9 @@ const config = loadConfig();
 const app = createApp(config);
 const server = createServer(app).listen(config.port, () => {
   console.log(`MediFast on ${config.baseUrl}`);
-  if (config.demo.enabled) console.log(`  Demo Studio: ${config.baseUrl}/studio`);
+  if (config.demo.enabled) console.log(`  Demo Studio: ${config.baseUrl}/studio${config.demo.studioPassword ? " (password-protected)" : ""}`);
+  if (config.demo.enabled && config.publicUrl.startsWith("https://") && !config.demo.studioPassword)
+    console.warn("  ⚠ Public deployment without STUDIO_PASSWORD: anyone with the link can use and reset Demo Studio.");
 });
 
 async function startLiveBot() {

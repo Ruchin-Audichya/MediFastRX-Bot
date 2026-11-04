@@ -8,7 +8,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "dev": "node --watch-path=src src/main.ts & vite --config web/vite.config.ts",
+    "dev": "node src/scripts/dev.mjs",
     "start": "node src/main.ts",
     "build": "vite build --config web/vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p web/tsconfig.json",
@@ -41,5 +41,6 @@
     "react-router-dom": "^7.18.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
-  }
+  },
+  "license": "MIT"
 }

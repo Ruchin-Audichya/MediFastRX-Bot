@@ -22,6 +22,8 @@ export function loadConfig(over: Partial<Record<string, string>> = {}) {
     demo: {
       enabled: (e.DEMO_MODE ?? "true") !== "false",
       speed: Number(e.DEMO_SPEED ?? 1),
+      // When set, Demo Studio and its personas need this password (set it on any public deployment).
+      studioPassword: e.STUDIO_PASSWORD ?? "",
     },
     anthropicKey: e.ANTHROPIC_API_KEY ?? "",
     sessionSecret: e.SESSION_SECRET ?? "",
