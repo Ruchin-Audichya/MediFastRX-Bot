@@ -2,7 +2,7 @@
 
 ## The 5-minute demo
 
-**Setup:** open `/studio` on the projector (desktop, full screen). If a real bot is connected, keep a phone with Telegram open as the "pharmacist's counter phone".
+**Setup:** double-click the launcher for your OS in `launcher/` (or run `npm run demo`). It opens Demo Studio in the browser with a fresh demo every time. Put it on the projector, full screen. If a real bot is connected, keep a phone with Telegram open as the "pharmacist's counter phone".
 
 1. **The problem (30 s).** "One prescription, four shops, one missing strip. Inventory apps go stale because small chemists can't maintain a database. So we don't track stock. We ask the pharmacist."
 2. **Build a list (60 s).** As Aarav, tap **📷 Sample prescription**. Point out that OCR gives *candidates*: Dolo 650 matches exactly; "Cetirizine 10 mg" is an ingredient, so MediFast asks which brand. Then type `pan 20` to show it **refuses to swap strengths** ("I only know Pan 40").

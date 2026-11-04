@@ -15,7 +15,8 @@
     "test": "node --test --test-reporter=spec tests/*.test.ts",
     "seed:reset": "node src/scripts/reset.ts",
     "bot:check": "node src/scripts/bot-check.ts",
-    "evaluate": "node src/scripts/evaluate.ts"
+    "evaluate": "node src/scripts/evaluate.ts",
+    "demo": "node launcher/launch.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",

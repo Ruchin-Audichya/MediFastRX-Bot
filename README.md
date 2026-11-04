@@ -64,21 +64,27 @@ Apps that list pharmacy stock don't fix this, because small chemists can't keep 
 
 ## 🚀 Try it in one minute
 
-You need Node 22.18 or newer. No database, no API keys.
+**Easiest: double-click a launcher** in the [`launcher`](launcher/) folder.
+
+| Your computer | Double-click |
+| --- | --- |
+| Windows | `launcher/MediFast Demo (Windows).cmd` |
+| macOS | `launcher/MediFast Demo (Mac).command` (first time: right-click → Open) |
+| Linux | `launcher/medifast-demo-linux.sh` |
+
+The launcher checks Node.js (and opens the download page if it's missing), installs and builds on the first run, starts MediFast on a free port with a fresh demo, and opens **Demo Studio** in your browser. Keep the window open while you demo; close it to stop. After the first run it works without internet; only the map background and web fonts need a connection.
+
+**Or from a terminal** (Node 22.18 or newer, no database, no API keys):
 
 ```bash
 npm ci
 ```
 
 ```bash
-npm run build
+npm run demo
 ```
 
-```bash
-npm start
-```
-
-Then open **http://localhost:3000/studio**. Demo Studio runs the real bot with a customer, a pharmacist and an admin side by side, plus a live map. Type `Dolo 650` and follow along.
+Demo Studio runs the real bot with a customer, a pharmacist and an admin side by side, plus a live map. Type `Dolo 650` and follow along.
 
 **Want the real Telegram bot?** Put your [@BotFather](https://t.me/BotFather) token in `.env` (see `.env.example`) and run `npm start` again. To go public, follow [docs/DEPLOY.md](docs/DEPLOY.md).
 
