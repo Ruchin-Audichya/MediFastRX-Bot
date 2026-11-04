@@ -55,6 +55,7 @@ const fail = (code: string, message: string): never => { throw new DomainError(c
 export type Events = {
   "ask.created": { askId: string };
   "ask.updated": { askId: string };
+  "recipient.changed": { recipientId: number };
   "ask.closed": { askId: string; reason: "reserved" | "expired" | "cancelled" };
   "reservation.changed": { reservationId: string; status: ReservationStatus; by: "customer" | "pharmacy" | "system" };
   "pharmacy.submitted": { pharmacyId: number };
@@ -108,6 +109,14 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
     setRadius(id: number, radius: number) {
       if (!LIMITS.radiusKm.includes(radius as 1)) fail("bad-radius", "Choose 1, 2 or 5 km.");
       q("UPDATE users SET radius_km = ? WHERE id = ?").run(radius, id);
+    },
+    forget(id: number) {
+      transaction(db, () => {
+        q("UPDATE users SET lat = NULL, lng = NULL, place = NULL WHERE id = ?").run(id);
+        q("DELETE FROM drafts WHERE user_id = ?").run(id);
+        q("DELETE FROM saved WHERE user_id = ?").run(id);
+        q("DELETE FROM chat_state WHERE user_id = ?").run(id);
+      });
     },
     getState: (id: number) => {
       const r = q("SELECT state FROM chat_state WHERE user_id = ?").get(id) as { state: string } | undefined;
@@ -297,6 +306,7 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
       const draft = ask.items.map((_, i) => r.draft[i] ?? r.answers?.[i] ?? null);
       draft[index] = answer;
       q("UPDATE recipients SET draft = ? WHERE id = ?").run(JSON.stringify(draft), recipientId);
+      emit("recipient.changed", { recipientId });
       return getRecipient(recipientId)!;
     });
   }
@@ -315,6 +325,31 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
         .run(JSON.stringify(answers), JSON.stringify(answers), price ?? null, (opts.note ?? r.note)?.slice(0, 200) ?? null, t, recipientId);
       log(ask.id, r.state === "answered" ? "answer.revised" : "answer.submitted", actorId, { recipientId, answers, price });
       emit("ask.updated", { askId: ask.id });
+      emit("recipient.changed", { recipientId });
+      return getRecipient(recipientId)!;
+    });
+  }
+
+  /** Re-open a sent answer for changes. The customer keeps seeing the old answer until it's re-sent. */
+  function edit(recipientId: number, actorId: number) {
+    return transaction(db, () => {
+      const { r, ask } = ownedRecipient(recipientId, actorId);
+      if (ask.status !== "open") fail("closed", "This request is closed.");
+      if (r.state !== "answered") return r;
+      q("UPDATE recipients SET state = 'pending' WHERE id = ?").run(recipientId);
+      emit("recipient.changed", { recipientId });
+      return getRecipient(recipientId)!;
+    });
+  }
+
+  function setPrice(recipientId: number, actorId: number, price: number | null) {
+    return transaction(db, () => {
+      const { r, ask } = ownedRecipient(recipientId, actorId);
+      if (ask.status !== "open") fail("closed", "This request is closed.");
+      if (price != null && !(price > 0 && price < 1_000_000)) fail("bad-price", "Price should be a positive amount in rupees.");
+      q("UPDATE recipients SET price = ? WHERE id = ?").run(price, recipientId);
+      if (r.state === "answered") emit("ask.updated", { askId: ask.id });
+      emit("recipient.changed", { recipientId });
       return getRecipient(recipientId)!;
     });
   }
@@ -497,7 +532,7 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
   return {
     catalog, users, drafts, saved, pharmacies, on, now,
     asks: { create: createAsk, cancel: cancelAsk, get: getAsk, recipients: recipientsOf, board, planFor, reserve },
-    answers: { mark, submit: answer, get: getRecipient },
+    answers: { mark, submit: answer, edit, setPrice, get: getRecipient },
     reservations: { get: getReservation, update: updateReservation, of: reservationsOf },
     setRef, tick, history,
   };

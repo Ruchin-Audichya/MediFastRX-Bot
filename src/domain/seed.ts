@@ -11,9 +11,9 @@ export const AREAS: Area[] = JSON.parse(readFileSync(new URL("../../data/areas.j
 export const DEMO_PHARMACIES: DemoPharmacy[] = JSON.parse(readFileSync(new URL("../../data/demo-pharmacies.json", import.meta.url), "utf8"));
 
 export const STUDIO = {
-  customer: "studio:customer",
-  pharmacist: "studio:pharmacist",
-  admin: "studio:admin",
+  customer: "studio:1001",
+  pharmacist: "studio:1002",
+  admin: "studio:1003",
 } as const;
 
 /**
