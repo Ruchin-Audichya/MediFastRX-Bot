@@ -16,7 +16,8 @@
     "seed:reset": "node src/scripts/reset.ts",
     "bot:check": "node src/scripts/bot-check.ts",
     "evaluate": "node src/scripts/evaluate.ts",
-    "demo": "node launcher/launch.mjs"
+    "demo": "node launcher/launch.mjs",
+    "import:janaushadhi": "node src/scripts/import-janaushadhi.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",

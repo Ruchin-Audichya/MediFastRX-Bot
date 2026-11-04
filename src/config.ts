@@ -26,6 +26,12 @@ export function loadConfig(over: Partial<Record<string, string>> = {}) {
       studioPassword: e.STUDIO_PASSWORD ?? "",
     },
     anthropicKey: e.ANTHROPIC_API_KEY ?? "",
+    // Map tiles: OpenStreetMap data needs no key. Set MAP_TILE_URL only to use a keyed provider (MapTiler, Stadia…).
+    map: {
+      tileUrl: e.MAP_TILE_URL || "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      attribution: e.MAP_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    },
+    botUsername: e.BOT_USERNAME ?? "",
     sessionSecret: e.SESSION_SECRET ?? "",
   };
 }

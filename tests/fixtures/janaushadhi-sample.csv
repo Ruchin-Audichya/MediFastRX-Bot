@@ -1,0 +1,12 @@
+Sr. No.,Drug Code,Generic Name,Unit Size,MRP,Group Name
+1,TEST1,Paracetamol Tablets IP 500 mg,10's,9.00,Analgesic and Antipyretic
+2,TEST2,Telmisartan Tablets IP 40 mg,10's,14.50,Cardiovascular
+3,TEST3,"Metformin Hydrochloride Tablets IP 500 mg",10's,7.25,Anti-Diabetic
+4,TEST4,Pantoprazole Gastro-resistant Tablets IP 40 mg,10's,11.00,Gastrointestinal
+5,TEST5,Levothyroxine Sodium Tablets IP 50 mcg,100's,99.00,Hormones
+6,TEST6,Azithromycin Tablets IP 500 mg,3's,27.00,Anti-Infective
+7,TEST7,Cetirizine Tablets IP 10 mg,10's,4.00,Anti-Allergic
+8,TEST8,Amlodipine Tablets IP 5 mg,10's,5.50,Cardiovascular
+9,TEST9,Atorvastatin Tablets IP 10 mg,10's,12.00,Cardiovascular
+10,TEST10,Ondansetron Orally Disintegrating Tablets IP 4 mg,10's,8.00,Gastrointestinal
+11,TEST11,Glimepiride Tablets IP 1 mg,10's,6.00,Anti-Diabetic

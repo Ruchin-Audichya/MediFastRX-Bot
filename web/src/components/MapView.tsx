@@ -2,6 +2,16 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+type MapConfig = { tileUrl: string; attribution: string };
+let mapConfig: Promise<MapConfig> | null = null;
+const DEFAULT_MAP: MapConfig = {
+  tileUrl: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+};
+/** Tile server is configurable on the server (MAP_TILE_URL); fetched once per page load. */
+const loadMapConfig = () =>
+  (mapConfig ??= fetch("/api/public/overview").then((r) => r.json()).then((o) => o.map ?? DEFAULT_MAP).catch(() => DEFAULT_MAP));
+
 export type MapPin = { id: string | number; lat: number; lng: number; state: string; title: string; label?: string; big?: boolean; pulse?: boolean };
 
 /**
@@ -17,10 +27,7 @@ export function MapView({ pins, you, radiusKm, className, fit = true, onPin }: {
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { zoomControl: false, attributionControl: true, scrollWheelZoom: false }).setView([26.9, 75.78], 12);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19, subdomains: "abcd",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    }).addTo(m);
+    loadMapConfig().then((c) => { if (map.current === m) L.tileLayer(c.tileUrl, { maxZoom: 19, subdomains: "abcd", attribution: c.attribution }).addTo(m); });
     L.control.zoom({ position: "bottomright" }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;

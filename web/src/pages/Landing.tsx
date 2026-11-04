@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { api } from "../api.ts";
-import { Logo } from "../components/Logo.tsx";
+import { SiteNav } from "../components/SiteNav.tsx";
 import { TelegramHtml } from "../components/Html.tsx";
 
 const MapView = lazy(() => import("../components/MapView.tsx").then((m) => ({ default: m.MapView })));
@@ -45,18 +45,7 @@ export default function Landing() {
 
   return (
     <>
-      <nav className="nav">
-        <div className="wrap">
-          <Logo />
-          <div className="nav-links">
-            <a href="#how">How it works</a>
-            <a href="#pharmacies">For pharmacies</a>
-            <a href="#trust">Trust</a>
-            <a className="btn btn-light btn-sm" href="/studio">Live demo</a>
-            {tgLink && <a className="btn btn-primary btn-sm" href={tgLink}>Open in Telegram</a>}
-          </div>
-        </div>
-      </nav>
+      <SiteNav bot={o?.bot.username} />
 
       <header className="hero">
         <div className="wrap">
@@ -110,6 +99,22 @@ export default function Landing() {
               <div className="legend"><span className="pill s-have">✅ have</span><span className="pill s-tomorrow">⏳ by tomorrow</span><span className="pill s-alt">🔁 alt. brand</span><span className="pill s-no">❌ no</span></div>
             </div>
             <div className="step"><h3>Reserve and pick up</h3><p>Pick one shop, or let MediFast split the list across two nearby shops. Show the 4-digit code and pay at the counter.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="lookup-band">
+            <div>
+              <span className="eyebrow">Medicine lookup</span>
+              <h2 style={{ marginTop: 8 }}>Not sure what’s in your strip?</h2>
+              <p className="sub">See the exact composition, other brands with the same composition, strengths, and the Jan Aushadhi generic. Answers come from our data, not a chatbot.</p>
+            </div>
+            <form className="kb-search" onSubmit={(e) => { e.preventDefault(); const v = new FormData(e.currentTarget).get("q"); if (v) location.href = `/medicines?q=${encodeURIComponent(String(v))}`; }}>
+              <input name="q" placeholder="Try “Pan D” or “brands of paracetamol”" aria-label="Look up a medicine" />
+              <button className="btn btn-primary" type="submit">Look up</button>
+            </form>
           </div>
         </div>
       </section>

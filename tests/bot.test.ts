@@ -148,3 +148,29 @@ test("a new pharmacy onboards in chat and goes live only after admin approval", 
 test("OCR cleanup keeps medicine lines and drops clinic boilerplate", () => {
   assert.equal(cleanOcr("Dr. Sharma Clinic\nPatient: X  Age 34\nRx Dolo 650 tab\n|| Pan 40 ||\nDate 3/11"), "Dolo 650 tab\nPan 40");
 });
+
+test("questions get knowledge-base answers in chat, and product cards link to them", async () => {
+  const t = boot();
+  const C = PERSONAS.customer.id;
+  await t.say("customer", "what is Pan D");
+  assert.match(t.last(C).text, /Contains:<\/b> Pantoprazole 40 mg \+ Domperidone 30 mg/);
+  await t.press("customer", /Add Pan-D to list/);
+  assert.match(t.last(C).text, /Your list[\s\S]*Pan-D/);
+  await t.say("customer", "Thyronorm 50");
+  await t.press("customer", /ℹ️ About/);
+  assert.match(t.last(C).text, /Same composition, other brands:<\/b> Eltroxin 50, Thyrox 50/);
+  await t.say("customer", "/info azithromycin");
+  assert.match(t.last(C).text, /Azithral 500 tablet[\s\S]*Azee 500 tablet/);
+  t.app.stop();
+});
+
+test("a website deep link (/start add_<id>) puts the medicine on the list; restricted ones are refused", async () => {
+  const t = boot();
+  const C = PERSONAS.customer.id;
+  await t.say("customer", "/start add_telma-40");
+  assert.match(t.last(C).text, /added <b>Telma 40<\/b> from the website[\s\S]*Your list[\s\S]*Telma 40/);
+  await t.say("customer", "/start add_gen-alprazolam-025");
+  assert.match(t.last(C).text, /habit-forming/);
+  assert.equal(t.app.mf.drafts.get(t.app.mf.users.byRef(PERSONAS.customer.ref)!.id).length, 1);
+  t.app.stop();
+});

@@ -4,6 +4,7 @@ import { DomainError, type MediFast, type Plan, type Transport, type User } from
 import type { Area } from "../domain/seed.ts";
 import { distanceM } from "../domain/geo.ts";
 import * as V from "./views.ts";
+import { createKnowledgeBase } from "../kb/kb.ts";
 
 export type BotDeps = {
   mf: MediFast;
@@ -28,6 +29,7 @@ const GREETING = /^(hi|hii+|hello|hey|namaste|start|menu|help me)\b/i;
 
 export function createBot(deps: BotDeps) {
   const { mf } = deps;
+  const kb = createKnowledgeBase(mf.catalog);
   const bot = new Bot<Ctx>(deps.token, deps.botInfo ? { botInfo: deps.botInfo } : undefined);
 
   // ── Identity: every update maps to one persisted user on this transport.
@@ -63,11 +65,24 @@ export function createBot(deps: BotDeps) {
   bot.command("start", async (ctx) => {
     setState(ctx, null);
     if (ctx.match === "partner") return startPartner(ctx);
+    // Deep link from the website: t.me/<bot>?start=add_<productId> puts that medicine on the list.
+    const deep = String(ctx.match ?? "").match(/^add_([a-z0-9-]{2,60})$/);
+    if (deep && mf.catalog.get(deep[1])) {
+      try {
+        mf.drafts.add(ctx.user.id, deep[1], 1);
+        return reply(ctx, V.listCard(mf, mf.drafts.get(ctx.user.id), `👋 Welcome! I added <b>${V.esc(mf.catalog.get(deep[1])!.brand)}</b> from the website.`));
+      } catch (e) { return fail(ctx, e); }
+    }
     const ph = pharmacy(ctx);
     if (ph) return reply(ctx, V.deskCard(mf, ph, deps.links));
     await reply(ctx, V.welcome(ctx.user.name));
   });
   bot.command("help", (ctx) => reply(ctx, V.help));
+  bot.command("info", (ctx) => {
+    const q = String(ctx.match ?? "").trim();
+    if (!q) return ctx.reply("Send /info with a medicine name, e.g. <code>/info Pan D</code>.", { parse_mode: "HTML" });
+    return reply(ctx, V.kbAnswer(kb, mf.catalog, "about", q));
+  });
   bot.command("privacy", (ctx) => reply(ctx, V.privacy));
   bot.command("list", (ctx) => reply(ctx, V.listCard(mf, mf.drafts.get(ctx.user.id))));
   bot.command("meds", (ctx) => reply(ctx, V.savedCard(mf.saved.list(ctx.user.id))));
@@ -179,6 +194,7 @@ export function createBot(deps: BotDeps) {
       setState(ctx, null);
       await showList(ctx, `✓ Added ${s.batch.length} medicine${s.batch.length > 1 ? "s" : ""}.`);
     }],
+    [/^info:([\w-]+)$/, (ctx, m) => { const p = mf.catalog.get(m[1]); return p ? reply(ctx, V.kbAnswer(kb, mf.catalog, "about", p.brand, p)) : undefined; }],
     [/^nope$/, (ctx) => edit(ctx, { text: "No problem. Type the name exactly as printed on the strip, or the salt name (for example <code>pantoprazole 40</code>)." })],
     [/^q:([\w-]+):(-?\d)$/, async (ctx, m) => { if (m[2] !== "0") mf.drafts.change(ctx.user.id, m[1], Number(m[2])); await showList(ctx); }],
     [/^rm:([\w-]+)$/, async (ctx, m) => { mf.drafts.remove(ctx.user.id, m[1]); await showList(ctx); }],
@@ -386,6 +402,8 @@ export function createBot(deps: BotDeps) {
     if (s && "await" in s && s.await === "partner") return partnerStep(ctx, s, text);
     if (GREETING.test(text) && text.length < 20) return reply(ctx, V.welcome(ctx.user.name));
     if (text.length > 600) return ctx.reply("That's long. Send up to about 10 medicine names.");
+    const question = kb.intent(text);
+    if (question) return reply(ctx, V.kbAnswer(kb, mf.catalog, question.intent, question.subject));
     await handleMedicineText(ctx, text);
   });
 

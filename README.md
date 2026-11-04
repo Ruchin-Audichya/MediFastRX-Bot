@@ -54,6 +54,18 @@ Apps that list pharmacy stock don't fix this, because small chemists can't keep 
 - Customers walk in with a code and their items already set aside.
 - Sign up by sending `/partner` to the bot. An admin checks the licence before you go live.
 
+## 💊 Medicine knowledge, without an AI
+
+Ask the bot `what is Pan D`, `brands of paracetamol`, `generic of Telma 40` or `Thyronorm 50 kya hai`, or search on the website's **Medicines** page. Answers are built from structured data, not a language model: exact composition, other brands with the *same* composition, strengths, therapeutic group, ℞ status and, once imported, the official **Jan Aushadhi** generic with its MRP. Every answer names its source and never recommends a medicine for a symptom.
+
+Load the official PMBJP list (about 2,100 generics) with one command:
+
+```bash
+npm run import:janaushadhi -- path/to/janaushadhi-list.csv --as-of 2025-12-31
+```
+
+Nothing nearby? The board offers **🛵 Find it online**, which opens Blinkit's own search for that medicine. The customer opens it; MediFast doesn't scrape anyone.
+
 ## 🛡️ Built to be careful
 
 - **Exact matches only.** `Pan 20` never quietly becomes `Pan 40`. Anything unsure needs your tap.
@@ -101,7 +113,7 @@ Web app   ─┴─▶  API  ─┼─▶  Domain rules  ─▶  SQLite
 
 - **One process, one database.** Node 24 runs TypeScript directly; SQLite is built in.
 - **One brain.** Every rule lives in `src/domain/medifast.ts`. Telegram, the web and the demo all call it.
-- **Tested end to end.** 27 tests, including full Telegram conversations. CI runs them on every push.
+- **Tested end to end.** 36 tests, including full Telegram conversations. CI runs them on every push.
 
 📖 More: [Architecture](docs/ARCHITECTURE.md) · [Go live](docs/GO_LIVE.md) · [Deploy](docs/DEPLOY.md) · [Pilot kit](docs/PILOT_KIT.md) · [Demo script & viva notes](docs/DEMO_AND_VIVA.md)
 

@@ -104,7 +104,7 @@ p { margin: 0; }
 .nav { position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(1.4) blur(14px); background: rgb(11 26 43 / 82%); color: #fff; border-bottom: 1px solid rgb(255 255 255 / 8%); }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -0.02em; text-decoration: none; }
-.logo svg { width: 30px; height: 30px; }
+.logo svg { width: 30px; height: 30px; flex: none; }
 .nav-links { display: flex; gap: 6px; align-items: center; }
 .nav-links a:not(.btn) { color: rgb(255 255 255 / 75%); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 10px; border-radius: 8px; }
 .nav-links a:not(.btn):hover { color: #fff; background: rgb(255 255 255 / 6%); }
@@ -322,3 +322,46 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 24px; fl
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+/* ───────────── Medicine lookup ───────────── */
+.nav-links a[aria-current="page"] { color: #fff; background: rgb(255 255 255 / 8%); }
+.kb-hero { background: radial-gradient(900px 400px at 80% 0%, #15385a 0%, var(--night) 70%); color: #fff; padding: 56px 0 44px; }
+.kb-hero h1 { font-family: var(--display); font-size: clamp(32px, 4.6vw, 54px); font-weight: 800; letter-spacing: -0.03em; margin-top: 12px; }
+.kb-hero .lead { margin-top: 12px; color: rgb(255 255 255 / 75%); font-size: 18px; max-width: 60ch; }
+.kb-search { display: flex; gap: 10px; margin-top: 24px; max-width: 720px; }
+.kb-search input { flex: 1; min-width: 0; min-height: 52px; border-radius: 999px; border: 1px solid var(--line); padding: 0 20px; font: inherit; font-size: 16px; background: #fff; color: var(--ink); }
+.kb-search input:focus { outline: 3px solid color-mix(in srgb, var(--brand) 45%, transparent); }
+.kb-search .btn { min-height: 52px; padding: 0 24px; }
+.kb-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.kb-hero .chip { background: rgb(255 255 255 / 8%); border-color: rgb(255 255 255 / 18%); color: #fff; }
+.kb-hero .chip:hover { background: rgb(255 255 255 / 16%); color: #fff; }
+.kb-main { padding: 28px 0 64px; }
+.kb-card { padding: 28px; display: grid; gap: 22px; max-width: 900px; }
+.kb-card h2 { font-family: var(--display); font-size: 30px; letter-spacing: -0.02em; margin-top: 4px; }
+.kb-card h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+.kb-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.kb-comp { margin-top: 6px; color: var(--ink-2); font-size: 17px; }
+.kb-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.kb-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.kl-table { display: grid; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.kl-row { display: grid; grid-template-columns: minmax(160px, 1.1fr) 1.6fr 120px; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line-2); }
+.kl-row:first-child { border-top: 0; }
+.kl-row:nth-child(even) { background: #fafbfc; }
+.kb-name { border: 0; background: none; padding: 0; text-align: left; font-weight: 600; color: var(--ink); cursor: pointer; font-size: 15px; }
+button.kb-name:hover { color: var(--brand-ink); text-decoration: underline; }
+.kb-c { color: var(--muted); font-size: 14px; }
+.kl-row .pill { margin-left: 4px; }
+.kb-warn { background: var(--no-soft); color: #8a1f23; border-radius: var(--r); padding: 12px 14px; font-weight: 500; }
+.kb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.kb-foot { font-size: 13px; color: var(--muted); }
+.lookup-band { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-xl); padding: 40px; box-shadow: var(--shadow-sm); }
+.lookup-band .kb-search { margin-top: 0; }
+.lookup-band .kb-search input { background: var(--canvas); }
+@media (max-width: 760px) {
+  .kb-search { flex-direction: column; }
+  .kl-row { grid-template-columns: 1fr; gap: 2px; }
+  .lookup-band { grid-template-columns: 1fr; padding: 24px; }
+  .kb-card { padding: 20px; }
+}
+.kl-row > span:last-child { text-align: right; }
+@media (max-width: 760px) { .kl-row > span:last-child { text-align: left; } }

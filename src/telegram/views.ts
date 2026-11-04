@@ -3,6 +3,7 @@ import { label, type Product } from "../catalog/catalog.ts";
 import { km } from "../domain/geo.ts";
 import type { Answer, Ask, Board, BoardRow, DraftItem, MediFast, Pharmacy, Recipient, Reservation } from "../domain/medifast.ts";
 import type { Area } from "../domain/seed.ts";
+import type { KnowledgeBase } from "../kb/kb.ts";
 
 export type View = { text: string; keyboard?: InlineKeyboard };
 export type Links = { board: (askId: string) => { url: string; webApp: boolean } | null; desk: () => { url: string; webApp: boolean } | null };
@@ -43,7 +44,8 @@ export const help: View = {
     `• ℞ items: carry your prescription. The pharmacist checks it before handing over.\n` +
     `• No medical advice, no substitutions without you, no online payment.\n` +
     `• Habit-forming medicines aren't broadcast.\n\n` +
-    `Commands: /list · /asks · /meds · /scan · /privacy · /partner (for pharmacies)`,
+    `<b>Ask about a medicine</b> (no AI, from our data): <code>what is Pan D</code>, <code>brands of paracetamol</code>, <code>generic of Telma 40</code>.\n\n` +
+    `Commands: /list · /asks · /meds · /info · /scan · /privacy · /partner (for pharmacies)`,
 };
 
 export const privacy: View = {
@@ -60,7 +62,7 @@ export function productCard(p: Product, qty = 1): View {
   parts.push("\nCheck this matches the strip or prescription, then add it.");
   return {
     text: parts.join("\n"),
-    keyboard: new InlineKeyboard().text(`✚ Add to list${qty > 1 ? ` (×${qty})` : ""}`, `add:${p.id}:${qty}`).text("Not this", "nope"),
+    keyboard: new InlineKeyboard().text(`✚ Add to list${qty > 1 ? ` (×${qty})` : ""}`, `add:${p.id}:${qty}`).text("ℹ️ About", `info:${p.id}`).row().text("Not this", "nope"),
   };
 }
 
@@ -177,6 +179,17 @@ export function boardView(b: Board, links: Links, now: number): View {
   } else if (ask.status === "expired" || ask.status === "cancelled") {
     kb.text("🔁 Ask again", `again:${ask.id}`);
   } else linkButton(kb, "🗺 Details", links.board(ask.id));
+
+  // Items nobody nearby can supply: offer the customer an online search (they open it themselves).
+  const answered = b.rows.filter((r) => r.answers);
+  const missing = ask.items.filter((it, i) =>
+    it.schedule !== "restricted" &&
+    ((ask.status === "open" && counts.waiting === 0 && answered.length > 0) || ask.status === "expired") &&
+    !answered.some((r) => r.answers![i] === "have" || r.answers![i] === "tomorrow"));
+  if (missing.length) {
+    kb.row();
+    missing.slice(0, 2).forEach((it) => kb.url(`🛵 Find ${it.brand} online`, onlineLink(it.brand)));
+  }
   return { text: lines.join("\n"), keyboard: kb };
 }
 
@@ -317,4 +330,60 @@ export function pendingPharmacyCard(ph: Pharmacy): View {
     text: `🏪 <b>New pharmacy signup</b>\n\n<b>${esc(ph.name)}</b>\n${esc(ph.address)}, ${esc(ph.area)}\n📞 ${esc(ph.phone)}\nLicence: <code>${esc(ph.license)}</code>\n\nCheck the licence with the state drug controller before approving.`,
     keyboard: new InlineKeyboard().text("✅ Approve", `adm:${ph.id}:approved`).text("Reject", `adm:${ph.id}:rejected`),
   };
+}
+
+// ───────────── Knowledge base answers (no LLM: structured data only) ─────────────
+
+const onlineLink = (q: string) => `https://blinkit.com/s/?q=${encodeURIComponent(q)}`;
+
+export function kbAnswer(kb: KnowledgeBase, catalog: { resolve: (q: string) => any }, intent: "about" | "brands" | "generic" | "strengths", subject: string, product?: Product): View {
+  const r = product ? null : catalog.resolve(subject);
+  const focus: Product | null = product ?? (r?.kind === "exact" ? r.product : null);
+  const salts = focus ? focus.ingredients.map((i) => i.name) : kb.salts(subject);
+  if (!salts.length)
+    return { text: `I don't have information on <b>${esc(subject)}</b> yet.\n\nTry the brand name as printed on the strip, or the salt name (for example <code>pantoprazole</code>).` };
+  const infos = salts.map((s) => kb.info(s));
+  const lines: string[] = [];
+  const kbd = new InlineKeyboard();
+
+  if (focus) {
+    lines.push(`ℹ️ <b>${esc(label(focus))}</b>${focus.schedule === "rx" ? RX : ""}`, `<b>Contains:</b> ${esc(focus.composition)}`);
+  } else {
+    lines.push(`ℹ️ <b>${esc(infos.map((i) => i.salt).join(" + "))}</b>`);
+  }
+  const groups = [...new Set(infos.flatMap((i) => i.groups))];
+  if (groups.length) lines.push(`<b>Group:</b> ${esc(groups.join(", "))}`);
+  const restricted = focus ? focus.schedule === "restricted" : infos.some((i) => i.restricted);
+  if (restricted) lines.push("⚠️ Habit-forming. MediFast doesn't broadcast it; ask your pharmacist directly.");
+  else if (focus ? focus.schedule === "rx" : infos.some((i) => i.prescription === "yes")) lines.push("℞ Prescription medicine");
+  else if (!focus && infos.some((i) => i.prescription === "some")) lines.push("Some combinations containing it need a prescription (℞).");
+
+  const products = focus ? [] : [...new Map(infos.flatMap((i) => i.products).map((p) => [p.id, p])).values()];
+  if (intent !== "generic") {
+    if (focus) {
+      const same = kb.sameAs(focus);
+      lines.push("", same.length ? `<b>Same composition, other brands:</b> ${esc(same.map((p) => p.brand).join(", "))}` : "<b>Same composition, other brands:</b> none in our catalog");
+      const others = infos.flatMap((i) => i.products).filter((p) => p.id !== focus.id && !same.some((s) => s.id === p.id));
+      if (others.length) lines.push(`<b>Other products with ${esc(salts.join(" / "))}:</b> ${esc(others.slice(0, 6).map((p) => label(p)).join(", "))}`);
+    } else if (products.length) {
+      lines.push("", `<b>${intent === "strengths" ? "Strengths and forms" : "Brands"} in our catalog:</b>`);
+      products.slice(0, 8).forEach((p) => lines.push(`• ${esc(label(p))}${p.ingredients.length > 1 ? ` <i>(${esc(p.composition)})</i>` : ""}`));
+    }
+  }
+  const jan = infos.flatMap((i) => i.jan);
+  if (jan.length) {
+    lines.push("", "<b>Jan Aushadhi generic:</b>");
+    jan.slice(0, 4).forEach((j) => lines.push(`• ${esc(j.name)}${j.unit ? `, ${esc(j.unit)}` : ""}${j.mrp != null ? ` · MRP ₹${j.mrp}` : ""}`));
+  } else if (intent === "generic") {
+    const generics = [...new Map(infos.flatMap((i) => i.products).filter((p) => p.generic).map((p) => [p.id, p])).values()];
+    lines.push("", generics.length ? `<b>Generic in our catalog:</b> ${esc(generics.map((p) => label(p)).join(", "))}` : "No generic listed yet.");
+    if (!kb.hasJan) lines.push("<i>Jan Aushadhi prices appear once the official list is imported.</i>");
+  }
+  lines.push("", "<i>Information only. Your doctor or pharmacist decides what’s right for you, so don’t switch brand or strength without asking.</i>");
+  lines.push(`<i>Source: MediFast catalog${kb.janSource ? `; ${esc(kb.janSource)}` : ""}.</i>`);
+
+  if (focus && focus.schedule !== "restricted") kbd.text(`✚ Add ${focus.brand} to list`, `add:${focus.id}:1`).row();
+  products.filter((p) => p.schedule !== "restricted").slice(0, 4).forEach((p) => kbd.text(`✚ ${label(p)}`, `add:${p.id}:1`).row());
+  if (!restricted) kbd.url("🛵 Search online (Blinkit)", onlineLink(focus ? focus.brand : salts[0]));
+  return { text: lines.join("\n"), keyboard: kbd.inline_keyboard.flat().length ? kbd : undefined };
 }

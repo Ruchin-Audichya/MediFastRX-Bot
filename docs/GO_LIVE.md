@@ -57,7 +57,14 @@ Follow [DEPLOY.md](DEPLOY.md) (Fly.io or Render). Set these secrets there, not i
 
 On start-up the server registers the webhook and adds a **MediFast** menu button that opens the Mini App. Check with `https://<your-app>/healthz`; it should say `"live": true`.
 
-## Step 5 · Onboard a real pharmacy
+## Step 5 · Import the Jan Aushadhi list (5 minutes)
+
+1. Download the official product list from [janaushadhi.gov.in](https://janaushadhi.gov.in) (Product List) or the PIB annexure listing PMBJP medicines.
+2. If it's a PDF, open it in Excel (**Data → Get Data → From PDF**) and save the table as CSV. On Linux/macOS, `pdftotext -layout list.pdf list.txt` also works.
+3. Run `npm run import:janaushadhi -- list.csv --as-of 2025-12-31` (use the list's date).
+4. Commit `data/janaushadhi.json`. Answers now show the Jan Aushadhi generic and MRP, with the list's date as the source.
+
+## Step 6 · Onboard a real pharmacy
 
 See [PILOT_KIT.md](PILOT_KIT.md): what to say, what the pharmacist does, and what to measure. In short, the pharmacist sends `/partner` to your bot. You get an **Approve** card after checking their drug licence, and they're live.
 
@@ -76,3 +83,4 @@ The screenshots in `docs/screenshots/` show a grey map because they were capture
 | Bot doesn't reply | Only one copy of the bot may run at a time. Stop other running copies (or the deployed one) when testing locally. |
 | Pharmacy never gets requests | It must be **approved** and **open** (`/open`), and within the customer's radius. |
 | Nobody can approve pharmacies | `ADMIN_TELEGRAM_IDS` is missing or wrong. |
+| Map is grey | Tiles are blocked on that network. OpenStreetMap tiles need no key; to use a keyed provider, set `MAP_TILE_URL` and `MAP_ATTRIBUTION`. |

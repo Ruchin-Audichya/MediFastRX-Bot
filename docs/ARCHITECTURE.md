@@ -101,9 +101,14 @@ erDiagram
 - **Rate limits** on HTTP; per-customer limits on open asks (2) and daily asks (12); bounded inputs everywhere.
 - CSP, helmet headers, and framing allowed only for Telegram's web client.
 
+## Knowledge base (no LLM)
+
+`src/kb/kb.ts` answers medicine questions deterministically. A small pattern matcher recognises the intent (*about*, *brands*, *generic*, *strengths*; English and common Hinglish). The resolver finds the product or salt, and the answer is assembled from the catalog plus the optional Jan Aushadhi list (`data/janaushadhi.json`, created by `npm run import:janaushadhi`). Every fact shown is traceable to a row of data, and unknown names produce "no information" instead of a guess.
+
 ## Why these choices
 
 - **Telegram first:** no install for either side, push notifications for free, and an editable message is a natural live board. In India the equivalent at scale would be WhatsApp Business; the domain is channel-agnostic, so that's a new adapter, not a rewrite.
 - **Ask, don't index:** avoids the stale-inventory problem entirely and makes supply-side onboarding nearly free.
+- **Not Supabase (yet):** a hosted Postgres would add an internet dependency (the offline demo would break), cloud credentials and a second service, without fixing any current limit. When multiple server instances are needed, move to PostgreSQL (Supabase is one host for it); the domain API stays the same.
 - **SQLite + one process:** transactions keep reservations and state transitions consistent without a separate database server. Scaling to multiple instances would mean moving the event bus and SQLite to Postgres + a queue; the domain API wouldn't change.
 - **Node type stripping:** the server runs `.ts` files directly (no build step); `tsc` is used only for type checking.

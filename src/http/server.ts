@@ -9,6 +9,7 @@ import { AREAS, DEMO_PHARMACIES } from "../domain/seed.ts";
 import { label } from "../catalog/catalog.ts";
 import { PERSONAS, type App, type PersonaKey } from "../app.ts";
 import { verifyInitData } from "./auth.ts";
+import { createKnowledgeBase } from "../kb/kb.ts";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 type Req = Request & { user?: User };
@@ -17,6 +18,9 @@ const SAMPLE_RX = fileURLToPath(new URL("../../data/demo-prescription.png", impo
 
 export function createServer(app: App) {
   const { mf, config } = app;
+  const kb = createKnowledgeBase(mf.catalog);
+  // Allow images from the configured tile server ({s} subdomains become a wildcard).
+  const tileHost = (() => { try { return new URL(config.map.tileUrl.replace("{s}", "a")).origin.replace(/^https:\/\/a\./, "https://*."); } catch { return ""; } })();
   const http = express();
   http.disable("x-powered-by");
   http.set("trust proxy", 1);
@@ -28,7 +32,7 @@ export function createServer(app: App) {
           scriptSrc: ["'self'", "https://telegram.org"],
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
-          imgSrc: ["'self'", "data:", "blob:", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org"],
+          imgSrc: ["'self'", "data:", "blob:", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org", ...(tileHost ? [tileHost] : [])],
           connectSrc: ["'self'"],
           frameAncestors: ["'self'", "https://web.telegram.org", "https://*.telegram.org"],
           // Only on HTTPS deployments; on a LAN demo over http it would break every asset.
@@ -88,12 +92,30 @@ export function createServer(app: App) {
   api.get("/public/overview", wrap(() => ({
     demo: config.demo.enabled,
     studioLocked: !!config.demo.studioPassword,
-    bot: { live: !!app.live, username: app.live?.botInfo?.username ?? null },
+    bot: { live: !!app.live, username: app.live?.botInfo?.username ?? (config.botUsername || null) },
+    map: config.map,
+    knowledge: { catalog: mf.catalog.size, janAushadhi: kb.janCount, source: kb.janSource },
     catalogSize: mf.catalog.size,
     areas: AREAS,
     pharmacies: mf.pharmacies.list("approved").map((p) => ({ name: p.name, area: p.area, lat: p.lat, lng: p.lng, demo: !!p.demo })),
     metrics: mf.history.metrics(),
   })));
+  api.get("/public/kb", wrap((req) => {
+    const raw = String(req.query.q ?? "").trim().slice(0, 80);
+    if (!raw) return { query: raw, found: false };
+    const it = kb.intent(raw);
+    const subject = it?.subject ?? raw;
+    const r = mf.catalog.resolve(subject);
+    const focus = r.kind === "exact" ? r.product : null;
+    const salts = focus ? focus.ingredients.map((i) => i.name) : kb.salts(subject);
+    const view = (p: any) => ({ id: p.id, label: label(p), brand: p.brand, composition: p.composition, form: p.form, schedule: p.schedule, generic: p.generic });
+    return {
+      query: raw, intent: it?.intent ?? "about", found: salts.length > 0,
+      focus: focus ? { ...view(focus), sameAs: kb.sameAs(focus).map(view) } : null,
+      salts: salts.map((s) => { const i = kb.info(s); return { salt: i.salt, groups: i.groups, prescription: i.prescription, restricted: i.restricted, products: i.products.map(view), jan: i.jan }; }),
+      sources: ["MediFast catalog", ...(kb.janSource ? [kb.janSource] : [])],
+    };
+  }));
   api.get("/public/resolve", wrap((req) => {
     const r = mf.catalog.resolve(String(req.query.q ?? "").slice(0, 80));
     const view = (p: any) => ({ id: p.id, label: label(p), composition: p.composition, schedule: p.schedule });

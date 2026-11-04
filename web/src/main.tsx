@@ -6,6 +6,7 @@ import { api, loadTelegramSdk } from "./api.ts";
 import Landing from "./pages/Landing.tsx";
 
 const Studio = lazy(() => import("./pages/Studio.tsx"));
+const Medicines = lazy(() => import("./pages/Medicines.tsx"));
 const Board = lazy(() => import("./pages/Board.tsx"));
 const Desk = lazy(() => import("./pages/Desk.tsx"));
 const Me = lazy(() => import("./pages/Me.tsx"));
@@ -40,6 +41,7 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/studio" element={<Studio />} />
+          <Route path="/medicines" element={<Medicines />} />
           <Route path="/app/*" element={<MiniApp />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
