@@ -12,7 +12,7 @@ You see the answers live, reserve, and pick up.
 [![CI](https://github.com/Ruchin-Audichya/MediFastRX-Bot/actions/workflows/test.yml/badge.svg)](https://github.com/Ruchin-Audichya/MediFastRX-Bot/actions/workflows/test.yml)
 ![Node](https://img.shields.io/badge/Node-24-339933?logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Telegram](https://img.shields.io/badge/Telegram-bot%20%2B%20Mini%20App-26A5E4?logo=telegram&logoColor=white)
+[![Telegram](https://img.shields.io/badge/Telegram-@MediFast2__bot-26A5E4?logo=telegram&logoColor=white)](https://t.me/MediFast2_bot)
 ![SQLite](https://img.shields.io/badge/SQLite-built--in-003B57?logo=sqlite&logoColor=white)
 
 <img src="docs/screenshots/studio.png" alt="Demo Studio: customer chat, live map of answers, and pharmacist chat side by side" />

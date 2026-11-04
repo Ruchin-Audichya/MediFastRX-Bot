@@ -7,7 +7,7 @@ About 30 minutes, start to finish. You need a Telegram account on your phone and
 1. In Telegram, open **@BotFather** (blue tick) and tap **Start**.
 2. Send `/newbot`.
 3. **Name** (shown to users): `MediFast`
-4. **Username** (must end in `bot` and be unique), e.g. `MediFastJaipurBot`. If it's taken, try another.
+4. **Username** (must end in `bot` and be unique). Ours is **`MediFast2_bot`** → https://t.me/MediFast2_bot
 5. BotFather replies with a **token** like `7123456789:AAH...`. Treat it like a password: never post it in a chat or on GitHub.
 6. Optional, but it looks finished:
    - `/setdescription` → `Ask every chemist nearby at once. Send your medicine list; see who has it; reserve and pick up.`
@@ -33,7 +33,7 @@ Check the token:
 npm run bot:check
 ```
 
-You should see `✔ Token works: @MediFastJaipurBot`. Then start everything:
+You should see `✔ Token works: @MediFast2_bot`. Then start everything:
 
 ```bash
 npm run demo

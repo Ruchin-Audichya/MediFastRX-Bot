@@ -11,7 +11,7 @@ Everything you need to run a small, honest pilot with real pharmacies: who to ap
 | Busy counter with a range of medicines | More requests, more learning |
 | 2–3 shops close together | A customer's request reaches more than one shop, so you can see the comparison and split working |
 
-Go in person at a quiet time (mid-morning or mid-afternoon). Bring the printed one-page guide (`docs/pilot/pharmacist-guide.pdf`) and your phone with the bot open.
+Go in person at a quiet time (mid-morning or mid-afternoon). Bring the printed one-page guide (`docs/pilot/pharmacist-guide.pdf`) and your phone with the bot open (https://t.me/MediFast2_bot).
 
 ## 2. What to say
 
@@ -25,7 +25,7 @@ Go in person at a quiet time (mid-morning or mid-afternoon). Bring the printed o
 
 **Message to send afterwards (WhatsApp or Telegram)**
 
-> Thank you for agreeing to try MediFast! Open this link in Telegram: https://t.me/<YourBotUsername>?start=partner. It asks for your shop name, location, counter phone and drug licence number. After we verify the licence you'll start receiving requests. Send /close any time to pause, and /open to resume. — <Your name>, <phone>
+> Thank you for agreeing to try MediFast! Open this link in Telegram: https://t.me/MediFast2_bot?start=partner. It asks for your shop name, location, counter phone and drug licence number. After we verify the licence you'll start receiving requests. Send /close any time to pause, and /open to resume. — <Your name>, <phone>
 
 ## 3. Questions they will ask
 
