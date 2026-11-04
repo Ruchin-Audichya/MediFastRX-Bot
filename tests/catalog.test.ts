@@ -57,3 +57,9 @@ test("labels and schedules come from the catalog", () => {
   assert.equal(catalog.get("dolo-650")!.schedule, "otc");
   assert.ok(catalog.size >= 100);
 });
+
+test("other brands and salt spellings are never pinned to a single product", () => {
+  for (const q of ["Pantop 40", "thyroxine 50", "frusemide 40", "cetrizine 10", "paracitamol", "ORS", "amoxycillin 500", "Glucomet 500"])
+    assert.notEqual(catalog.resolve(q).kind, "exact", q);
+  assert.equal(choose("cetrizine 10").reason, "ingredient", "a misspelt salt still finds its products");
+});

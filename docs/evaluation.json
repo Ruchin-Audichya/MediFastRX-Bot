@@ -1,0 +1,130 @@
+{
+  "environment": {
+    "node": "v22.23.4",
+    "platform": "linux-x64",
+    "catalogProducts": 105
+  },
+  "matching": {
+    "cases": 81,
+    "correct": 81,
+    "unsafe": 0,
+    "byGroup": {
+      "brand + strength": {
+        "total": 20,
+        "correct": 20,
+        "unsafe": 0
+      },
+      "spacing / case / form words": {
+        "total": 10,
+        "correct": 10,
+        "unsafe": 0
+      },
+      "known misspellings (curated aliases)": {
+        "total": 5,
+        "correct": 5,
+        "unsafe": 0
+      },
+      "unknown misspellings (fuzzy)": {
+        "total": 10,
+        "correct": 10,
+        "unsafe": 0
+      },
+      "brand without strength": {
+        "total": 7,
+        "correct": 7,
+        "unsafe": 0
+      },
+      "salt / ingredient name": {
+        "total": 8,
+        "correct": 8,
+        "unsafe": 0
+      },
+      "strength / form not in catalog": {
+        "total": 8,
+        "correct": 8,
+        "unsafe": 0
+      },
+      "other brand / salt spelling": {
+        "total": 8,
+        "correct": 8,
+        "unsafe": 0
+      },
+      "not a medicine / unknown": {
+        "total": 5,
+        "correct": 5,
+        "unsafe": 0
+      }
+    },
+    "failures": [],
+    "resolveMicroseconds": {
+      "n": 20000,
+      "median": 223.2,
+      "p95": 617.909,
+      "max": 7648.483
+    }
+  },
+  "domainMs": {
+    "createAsk": {
+      "n": 300,
+      "median": 0.358,
+      "p95": 0.513,
+      "max": 2.985
+    },
+    "submitAnswer": {
+      "n": 300,
+      "median": 0.246,
+      "p95": 0.375,
+      "max": 26.212
+    },
+    "board": {
+      "n": 300,
+      "median": 0.352,
+      "p95": 0.473,
+      "max": 1.19
+    },
+    "reserve": {
+      "n": 300,
+      "median": 0.336,
+      "p95": 0.488,
+      "max": 1.412
+    }
+  },
+  "endToEndMs": {
+    "broadcastToPharmacist": {
+      "n": 40,
+      "median": 2.417,
+      "p95": 4.529,
+      "max": 4.937
+    },
+    "answerToCustomerBoard": {
+      "n": 40,
+      "median": 1.194,
+      "p95": 2.249,
+      "max": 2.539
+    }
+  },
+  "ocr": {
+    "coldMs": 897,
+    "warmMs": {
+      "n": 5,
+      "median": 460.111,
+      "p95": 487.739,
+      "max": 487.739
+    },
+    "lines": [
+      "MEDIFAST DEMO - NOT A VALID PRESCRIPTION → none",
+      "Dolo 650 mg tablet → exact",
+      "Cetirizine 10 mg tablet → choose",
+      "Confirm every product before requesting pharmacy review. → none"
+    ]
+  },
+  "simulation": {
+    "note": "Fictional network, assumed reply/stock profiles. Illustrates the mechanism, not field performance.",
+    "trials": 2000,
+    "pharmaciesWithin2km": 6,
+    "respondersMedian": 4,
+    "fulfilledByOneShop": 0.818,
+    "fulfilledOnlyBySplit": 0.161,
+    "notFulfilled": 0.021
+  }
+}

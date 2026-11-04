@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p web/tsconfig.json",
     "test": "node --test --test-reporter=spec tests/*.test.ts",
     "seed:reset": "node src/scripts/reset.ts",
-    "bot:check": "node src/scripts/bot-check.ts"
+    "bot:check": "node src/scripts/bot-check.ts",
+    "evaluate": "node src/scripts/evaluate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",
