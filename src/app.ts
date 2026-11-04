@@ -75,8 +75,13 @@ export function createApp(config: Config, opts: { extract?: Extractor } = {}) {
   const tick = setInterval(() => mf.tick(), 15_000);
   tick.unref();
 
+  function resetStudio() {
+    mf.resetStudioActivity();
+    studio?.fake.reset();
+  }
+
   return {
-    config, db, mf, catalog, studio, live, links, secret, notifier,
+    config, db, mf, catalog, studio, live, links, secret, notifier, resetStudio,
     stop() { clearInterval(tick); sim?.stop(); db.close(); },
   };
 }

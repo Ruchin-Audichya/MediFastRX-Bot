@@ -80,6 +80,7 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
   bus.setMaxListeners(50);
   const emit = <K extends keyof Events>(k: K, v: Events[K]) => queueMicrotask(() => bus.emit(k, v));
   const on = <K extends keyof Events>(k: K, fn: (v: Events[K]) => void) => bus.on(k, fn);
+  const off = <K extends keyof Events>(k: K, fn: (v: Events[K]) => void) => bus.off(k, fn);
 
   const q = (sql: string) => db.prepare(sql);
   const log = (askId: string | null, kind: string, actor: number | null, data?: unknown) =>
@@ -529,8 +530,25 @@ export function createMediFast(db: DB, catalog: Catalog, opts: { now?: () => num
     },
   };
 
+  /** Demo Studio reset: erase activity created by studio personas only. */
+  function resetStudioActivity() {
+    transaction(db, () => {
+      const studioUsers = "SELECT id FROM users WHERE transport = 'studio'";
+      const asks = `SELECT id FROM asks WHERE customer_id IN (${studioUsers})`;
+      db.exec(`DELETE FROM events WHERE ask_id IN (${asks});
+               DELETE FROM reservations WHERE ask_id IN (${asks});
+               DELETE FROM recipients WHERE ask_id IN (${asks});
+               DELETE FROM asks WHERE id IN (${asks});
+               DELETE FROM drafts WHERE user_id IN (${studioUsers});
+               DELETE FROM chat_state WHERE user_id IN (${studioUsers});
+               DELETE FROM saved WHERE user_id IN (${studioUsers});
+               UPDATE users SET lat = NULL, lng = NULL, place = NULL, radius_km = 2 WHERE transport = 'studio';
+               UPDATE pharmacies SET accepting = 1 WHERE demo = 1;`);
+    });
+  }
+
   return {
-    catalog, users, drafts, saved, pharmacies, on, now,
+    catalog, users, drafts, saved, pharmacies, on, off, now, resetStudioActivity,
     asks: { create: createAsk, cancel: cancelAsk, get: getAsk, recipients: recipientsOf, board, planFor, reserve },
     answers: { mark, submit: answer, edit, setPrice, get: getRecipient },
     reservations: { get: getReservation, update: updateReservation, of: reservationsOf },
